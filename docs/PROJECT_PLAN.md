@@ -7,6 +7,11 @@ GitHub repo: https://github.com/itsmeyuukii/custom-cms
 (pushed to `main`, history split into small logical commits — run
 `git log --oneline` to see them)
 
+See also: [COLLECTIONS_PLAN.md](COLLECTIONS_PLAN.md) (design for the
+Payload-style Collections system), [SECURITY_REVIEW.md](SECURITY_REVIEW.md)
+(vulnerability findings — currently has an open **Critical** finding on
+missing authorization checks)
+
 ---
 
 ## 1. Decisions made
