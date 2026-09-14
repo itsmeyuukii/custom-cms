@@ -96,59 +96,76 @@ unblocks the next one or is cheap enough that there's no reason to delay
 it. Revisit this ordering any time priorities actually change; it's a
 default sequence, not a locked contract.
 
+**Build next, in order:**
+
+1. Read-only REST API (Pages & Posts) — design in §6 below
+2. RBAC v2 — full design in [RBAC_PLAN.md](RBAC_PLAN.md)
+3. Media upload
+4. Collections system
+5. Enforce Collections access via RBAC v2
+
+Reasoning for that order, and everything after it, follows.
+
 ### P0 — fix now, before building on top of it
 
-1. ~~**Close the authorization gap**~~ — **Done, 2026-09-15.** See
-   [SECURITY_REVIEW.md](SECURITY_REVIEW.md) findings #1/#2 and
-   [src/lib/rbac.ts](../src/lib/rbac.ts): `requireRole()`/`hasRole()`
-   with a `WRITE_ROLES = ["ADMIN", "EDITOR"]` list, enforced in every
-   Pages write action and reflected in the admin UI. Verified against all
-   three seeded roles. Still binary (write-capable or not) — no
-   EDITOR-vs-ADMIN distinction yet; revisit if that turns out to matter.
+~~**Close the authorization gap**~~ — **Done, 2026-09-15.** See
+[SECURITY_REVIEW.md](SECURITY_REVIEW.md) findings #1/#2 and
+[src/lib/rbac.ts](../src/lib/rbac.ts): `requireRole()`/`hasRole()`
+with a `WRITE_ROLES = ["ADMIN", "EDITOR"]` list, enforced in every
+Pages write action and reflected in the admin UI. Verified against all
+three seeded roles. This is the RBAC that RBAC v2 (below) replaces —
+it's correct as far as it goes, just hardcoded to three fixed roles.
 
-### P1 — near-term, high value, low structural risk
+### P1 — build these next, in this order
 
-2. **Read-only REST API for Pages & Posts** (design below, §6). The data
-   model already exists; this is mostly wiring, not design. It directly
-   satisfies the original "public API for a separate frontend" goal
-   without waiting on the Collections system.
-3. **Media upload flow.** Needed for the Collections system's `upload`
-   field type to be useful, and independently useful right now (Hero/Card
-   Grid blocks already reference image URLs by hand).
+1. **Read-only REST API for Pages & Posts** (design below, §6). The
+   data model already exists; this is mostly wiring around already-tested
+   queries, not design — the lowest-risk, fastest-value item on the whole
+   board. **Zero dependency on RBAC v2**: read endpoints are public and
+   stay public, so there's no reason to wait on the permissions rework.
+   Directly satisfies the original "public API for a separate frontend"
+   goal.
+2. **RBAC v2 — database-driven roles & permissions** (full plan in
+   [RBAC_PLAN.md](RBAC_PLAN.md)). Bigger than item 1,
+   but it's the highest-leverage remaining piece: it's what Media upload,
+   Collections' access config, and any future API write endpoints all
+   need, and building any of those against the current `WRITE_ROLES`
+   enum first just means redoing their authorization wiring once this
+   lands. Better to absorb that cost once, here, than three times later.
 
-### P2 — the big structural investments
+### P2 — depend on RBAC v2 being done
 
-4. **RBAC v2 — database-driven roles & permissions** — see
-   [RBAC_PLAN.md](RBAC_PLAN.md). Replaces the fixed ADMIN/EDITOR/VIEWER
-   enum from P0 with roles an admin creates and assigns permissions to
-   (e.g. a "Marketing" department with exactly the access it needs).
-   Sequenced *before* Collections' access enforcement (item 6) because
-   that item depends on this one — better to build the permission model
-   once than enforce it against the old enum and redo it.
-5. **Collections system** — see [COLLECTIONS_PLAN.md](COLLECTIONS_PLAN.md).
-   Independent of item 4 (different part of the app) — could be built in
-   parallel or in either order. Once it lands, the hand-written
-   Pages/Posts API from step 2 generalizes into `/api/v1/:collection` per
-   that plan's phase 7, and Posts gets migrated to be its first real
-   collection.
-6. Once both exist, **enforce Collections' `access` config** using RBAC
-   v2's permission keys (`create?: string[]`, not the old `Role[]` enum —
-   see [RBAC_PLAN.md](RBAC_PLAN.md) §7) on both the admin UI and the REST
-   API — one permission system, not two.
+3. **Media upload flow.** Sequenced after RBAC v2 (moved back from an
+   earlier draft of this plan that had it in P1) so its write action is
+   built once, correctly, against `requirePermission("media:upload")`
+   instead of the soon-to-be-replaced `WRITE_ROLES`. Still needs its own
+   small decision before starting: where files actually live (local
+   disk vs. a hosted object store) — not resolved here, resolve it when
+   this item starts.
+4. **Collections system** — see [COLLECTIONS_PLAN.md](COLLECTIONS_PLAN.md).
+   Its `access` config is specified in terms of RBAC v2's permission
+   keys (see that doc's updated note near `CollectionConfig`), so it
+   comes after item 2 for the same reason Media upload does. Once it
+   lands, the hand-written Pages/Posts API from item 1 generalizes into
+   `/api/v1/:collection` per that plan's phase 7, and Posts gets migrated
+   to be its first real collection.
+5. **Enforce Collections' `access` config** using RBAC v2's permission
+   keys on both the admin UI and the REST API — one permission system,
+   not two.
 
 ### P3 — polish & operations (once the above is stable)
 
-7. Rate limiting on login and on public API endpoints
+6. Rate limiting on login and on public API endpoints
    ([SECURITY_REVIEW.md](SECURITY_REVIEW.md) finding #4)
-8. Automated tests
-9. CI (lint/type-check/build on push), then decide on a deployment target
+7. Automated tests
+8. CI (lint/type-check/build on push), then decide on a deployment target
 
-## 6. REST API design (P1 above)
+## 6. REST API design (P1 item 1 above)
 
 Goal: let a separate frontend (or any external client) read published
 content over HTTP, without touching the admin UI. Read-only to start —
-write access waits for the P0 authorization fix and reuses whatever role
-model comes out of it.
+write access waits for RBAC v2 (P1 item 2) and reuses its permission
+model rather than the `WRITE_ROLES` enum this API doesn't otherwise need.
 
 ### Routes
 
@@ -198,11 +215,12 @@ start — easy to reason about for a CMS-content use case, easy to `LIMIT`/
 - **Read endpoints stay public**, same trust boundary as the existing
   public `/[slug]` page: only ever return `status: "PUBLISHED"` content,
   never draft/archived, regardless of who's asking.
-- **Write endpoints** (not built yet) go behind the same role
-  enforcement as the admin UI once P0 lands — no separate auth system.
-  For a headless client that isn't a logged-in browser session (e.g. a
-  build script), add a scoped `ApiKey` model (`key` hash, `role` or
-  explicit scopes, optional expiry) rather than expecting external
+- **Write endpoints** (not built yet) go behind
+  `requirePermission(...)` from RBAC v2 (see
+  [RBAC_PLAN.md](RBAC_PLAN.md)) once that lands — no separate auth
+  system. For a headless client that isn't a logged-in browser session
+  (e.g. a build script), add a scoped `ApiKey` model (`key` hash, a set
+  of permission keys, optional expiry) rather than expecting external
   clients to hold NextAuth session cookies.
 - Rate limit before this is public-facing beyond localhost (P3, ties to
   [SECURITY_REVIEW.md](SECURITY_REVIEW.md) finding #4) — an unauthenticated
