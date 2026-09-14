@@ -9,8 +9,10 @@ GitHub repo: https://github.com/itsmeyuukii/custom-cms
 
 See also: [COLLECTIONS_PLAN.md](COLLECTIONS_PLAN.md) (design for the
 Payload-style Collections system), [SECURITY_REVIEW.md](SECURITY_REVIEW.md)
-(vulnerability findings — currently has an open **Critical** finding on
-missing authorization checks)
+(vulnerability findings), [RBAC_PLAN.md](RBAC_PLAN.md) (design for
+database-driven, admin-configurable roles/departments — replaces the
+fixed ADMIN/EDITOR/VIEWER enum with roles an admin creates and assigns
+permissions to)
 
 ---
 
@@ -114,22 +116,32 @@ default sequence, not a locked contract.
    field type to be useful, and independently useful right now (Hero/Card
    Grid blocks already reference image URLs by hand).
 
-### P2 — the big structural investment
+### P2 — the big structural investments
 
-4. **Collections system** — see [COLLECTIONS_PLAN.md](COLLECTIONS_PLAN.md).
-   Bigger than P1 items; once it lands, the hand-written Pages/Posts API
-   from step 2 generalizes into `/api/v1/:collection` per that plan's
-   phase 7, and Posts gets migrated to be its first real collection.
-5. Once Collections exists, **enforce its `access` config** on both the
-   admin UI and the REST API using the same role model fixed in P0 — one
-   permission system, not two.
+4. **RBAC v2 — database-driven roles & permissions** — see
+   [RBAC_PLAN.md](RBAC_PLAN.md). Replaces the fixed ADMIN/EDITOR/VIEWER
+   enum from P0 with roles an admin creates and assigns permissions to
+   (e.g. a "Marketing" department with exactly the access it needs).
+   Sequenced *before* Collections' access enforcement (item 6) because
+   that item depends on this one — better to build the permission model
+   once than enforce it against the old enum and redo it.
+5. **Collections system** — see [COLLECTIONS_PLAN.md](COLLECTIONS_PLAN.md).
+   Independent of item 4 (different part of the app) — could be built in
+   parallel or in either order. Once it lands, the hand-written
+   Pages/Posts API from step 2 generalizes into `/api/v1/:collection` per
+   that plan's phase 7, and Posts gets migrated to be its first real
+   collection.
+6. Once both exist, **enforce Collections' `access` config** using RBAC
+   v2's permission keys (`create?: string[]`, not the old `Role[]` enum —
+   see [RBAC_PLAN.md](RBAC_PLAN.md) §7) on both the admin UI and the REST
+   API — one permission system, not two.
 
 ### P3 — polish & operations (once the above is stable)
 
-6. Rate limiting on login and on public API endpoints
+7. Rate limiting on login and on public API endpoints
    ([SECURITY_REVIEW.md](SECURITY_REVIEW.md) finding #4)
-7. Automated tests
-8. CI (lint/type-check/build on push), then decide on a deployment target
+8. Automated tests
+9. CI (lint/type-check/build on push), then decide on a deployment target
 
 ## 6. REST API design (P1 above)
 

@@ -154,6 +154,13 @@ export interface CollectionConfig {
 }
 ```
 
+> **Superseded by [RBAC_PLAN.md](RBAC_PLAN.md):** `Role[]` above refers
+> to the fixed three-value enum from the first RBAC pass. Once RBAC v2
+> lands (database-driven, admin-creatable roles), this shape changes to
+> permission-key strings (`create?: string[]`, e.g. `["pages:create"]`)
+> — see that doc's §7. Not fixed here since Collections isn't built yet
+> either; whichever lands second should just use the other's real shape.
+
 ### Example: redefining Posts as a collection
 
 ```ts
