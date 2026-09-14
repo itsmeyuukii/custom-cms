@@ -2,12 +2,11 @@
 
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
-import { auth } from "@/lib/auth";
+import { requireRole, WRITE_ROLES } from "@/lib/rbac";
 import { prisma } from "@/lib/prisma";
 
 export async function createPage(formData: FormData) {
-  const session = await auth();
-  if (!session?.user?.id) throw new Error("Not authenticated");
+  const session = await requireRole(WRITE_ROLES);
 
   const title = String(formData.get("title") ?? "").trim();
   const slug = String(formData.get("slug") ?? "").trim();
@@ -27,6 +26,8 @@ export async function createPage(formData: FormData) {
 }
 
 export async function addBlock(pageId: string, formData: FormData) {
+  await requireRole(WRITE_ROLES);
+
   const componentId = String(formData.get("componentId") ?? "");
   const dataRaw = String(formData.get("data") ?? "{}");
 
@@ -55,6 +56,8 @@ export async function addBlock(pageId: string, formData: FormData) {
 }
 
 export async function setPageStatus(pageId: string, status: "DRAFT" | "PUBLISHED" | "ARCHIVED") {
+  await requireRole(WRITE_ROLES);
+
   await prisma.page.update({
     where: { id: pageId },
     data: { status },

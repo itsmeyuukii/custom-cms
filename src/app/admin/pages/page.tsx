@@ -1,21 +1,27 @@
 import Link from "next/link";
 import { prisma } from "@/lib/prisma";
+import { auth } from "@/lib/auth";
+import { hasRole, WRITE_ROLES } from "@/lib/rbac";
 
 export default async function AdminPagesList() {
-  const pages = await prisma.page.findMany({
-    orderBy: { updatedAt: "desc" },
-  });
+  const [pages, session] = await Promise.all([
+    prisma.page.findMany({ orderBy: { updatedAt: "desc" } }),
+    auth(),
+  ]);
+  const canWrite = hasRole(session?.user?.role, WRITE_ROLES);
 
   return (
     <div>
       <div className="flex items-center justify-between">
         <h1 className="text-2xl font-semibold">Pages</h1>
-        <Link
-          href="/admin/pages/new"
-          className="rounded bg-black px-4 py-2 text-sm text-white"
-        >
-          New Page
-        </Link>
+        {canWrite && (
+          <Link
+            href="/admin/pages/new"
+            className="rounded bg-black px-4 py-2 text-sm text-white"
+          >
+            New Page
+          </Link>
+        )}
       </div>
 
       <table className="mt-6 w-full text-left text-sm">

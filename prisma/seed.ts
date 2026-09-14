@@ -20,6 +20,28 @@ async function main() {
     },
   });
 
+  await prisma.user.upsert({
+    where: { email: "editor@example.com" },
+    update: {},
+    create: {
+      email: "editor@example.com",
+      name: "Editor",
+      role: "EDITOR",
+      passwordHash,
+    },
+  });
+
+  await prisma.user.upsert({
+    where: { email: "viewer@example.com" },
+    update: {},
+    create: {
+      email: "viewer@example.com",
+      name: "Viewer",
+      role: "VIEWER",
+      passwordHash,
+    },
+  });
+
   await prisma.component.upsert({
     where: { key: "hero" },
     update: {},
@@ -67,7 +89,12 @@ async function main() {
     },
   });
 
-  console.log("Seeded admin user:", admin.email, "(password: changeme123)");
+  console.log(
+    "Seeded users (all password: changeme123):",
+    admin.email, "(ADMIN),",
+    "editor@example.com (EDITOR),",
+    "viewer@example.com (VIEWER)"
+  );
 }
 
 main()

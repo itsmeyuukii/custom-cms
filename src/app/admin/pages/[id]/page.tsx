@@ -1,6 +1,8 @@
 import { notFound } from "next/navigation";
 import Link from "next/link";
 import { prisma } from "@/lib/prisma";
+import { auth } from "@/lib/auth";
+import { hasRole, WRITE_ROLES } from "@/lib/rbac";
 import { addBlock, setPageStatus } from "../actions";
 
 export default async function EditPage({
@@ -10,7 +12,7 @@ export default async function EditPage({
 }) {
   const { id } = await params;
 
-  const [page, components] = await Promise.all([
+  const [page, components, session] = await Promise.all([
     prisma.page.findUnique({
       where: { id },
       include: {
@@ -18,9 +20,12 @@ export default async function EditPage({
       },
     }),
     prisma.component.findMany({ orderBy: { name: "asc" } }),
+    auth(),
   ]);
 
   if (!page) notFound();
+
+  const canWrite = hasRole(session?.user?.role, WRITE_ROLES);
 
   const addBlockToPage = addBlock.bind(null, page.id);
 
@@ -33,19 +38,21 @@ export default async function EditPage({
         </p>
       </div>
 
-      <div className="mt-2 flex gap-2">
-        {(["DRAFT", "PUBLISHED", "ARCHIVED"] as const).map((status) => (
-          <form key={status} action={setPageStatus.bind(null, page.id, status)}>
-            <button
-              type="submit"
-              disabled={page.status === status}
-              className="rounded border border-gray-300 px-3 py-1 text-xs disabled:opacity-40"
-            >
-              Set {status}
-            </button>
-          </form>
-        ))}
-      </div>
+      {canWrite && (
+        <div className="mt-2 flex gap-2">
+          {(["DRAFT", "PUBLISHED", "ARCHIVED"] as const).map((status) => (
+            <form key={status} action={setPageStatus.bind(null, page.id, status)}>
+              <button
+                type="submit"
+                disabled={page.status === status}
+                className="rounded border border-gray-300 px-3 py-1 text-xs disabled:opacity-40"
+              >
+                Set {status}
+              </button>
+            </form>
+          ))}
+        </div>
+      )}
 
       <h2 className="mt-8 font-semibold">Blocks</h2>
       <ul className="mt-2 space-y-2">
@@ -62,35 +69,39 @@ export default async function EditPage({
         )}
       </ul>
 
-      <h2 className="mt-8 font-semibold">Add Block</h2>
-      <form action={addBlockToPage} className="mt-2 space-y-3">
-        <div>
-          <label className="block text-sm font-medium">Component</label>
-          <select
-            name="componentId"
-            required
-            className="mt-1 w-full rounded border border-gray-300 px-3 py-2"
-          >
-            {components.map((c) => (
-              <option key={c.id} value={c.id}>
-                {c.name}
-              </option>
-            ))}
-          </select>
-        </div>
-        <div>
-          <label className="block text-sm font-medium">Data (JSON)</label>
-          <textarea
-            name="data"
-            rows={5}
-            defaultValue="{}"
-            className="mt-1 w-full rounded border border-gray-300 px-3 py-2 font-mono text-xs"
-          />
-        </div>
-        <button type="submit" className="rounded bg-black px-4 py-2 text-sm text-white">
-          Add Block
-        </button>
-      </form>
+      {canWrite && (
+        <>
+          <h2 className="mt-8 font-semibold">Add Block</h2>
+          <form action={addBlockToPage} className="mt-2 space-y-3">
+            <div>
+              <label className="block text-sm font-medium">Component</label>
+              <select
+                name="componentId"
+                required
+                className="mt-1 w-full rounded border border-gray-300 px-3 py-2"
+              >
+                {components.map((c) => (
+                  <option key={c.id} value={c.id}>
+                    {c.name}
+                  </option>
+                ))}
+              </select>
+            </div>
+            <div>
+              <label className="block text-sm font-medium">Data (JSON)</label>
+              <textarea
+                name="data"
+                rows={5}
+                defaultValue="{}"
+                className="mt-1 w-full rounded border border-gray-300 px-3 py-2 font-mono text-xs"
+              />
+            </div>
+            <button type="submit" className="rounded bg-black px-4 py-2 text-sm text-white">
+              Add Block
+            </button>
+          </form>
+        </>
+      )}
 
       {page.status === "PUBLISHED" && (
         <Link

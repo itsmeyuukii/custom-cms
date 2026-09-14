@@ -1,6 +1,12 @@
+import { redirect } from "next/navigation";
+import { auth } from "@/lib/auth";
+import { hasRole, WRITE_ROLES } from "@/lib/rbac";
 import { createPage } from "../actions";
 
-export default function NewPage() {
+export default async function NewPage() {
+  const session = await auth();
+  if (!hasRole(session?.user?.role, WRITE_ROLES)) redirect("/admin/pages");
+
   return (
     <div className="max-w-md">
       <h1 className="text-2xl font-semibold">New Page</h1>
