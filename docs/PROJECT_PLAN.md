@@ -77,12 +77,12 @@ correctly at its public URL with real data from the database.
 - `.env.example` — template of the environment variables needed (`DATABASE_URL`, `AUTH_SECRET`)
 - `.env` — your actual local values (gitignored, never committed). Currently points at a local Postgres database called `custom_cms` running on this machine.
 - `prisma/migrations/` — the migration that created all the tables, committed to git so anyone cloning the repo can run `prisma migrate deploy`/`dev` and get the same schema
+- `src/lib/api-response.ts` + `src/app/api/v1/{pages,posts}/route.ts` + `src/app/api/v1/{pages,posts}/[slug]/route.ts` — the read-only REST API (see §6). Consistent `{ data }`/`{ data, meta }`/`{ error }` envelope, offset pagination with a server-side `pageSize` cap of 100, published-only content. Verified end-to-end against real data: single-item found/not-found for both resources, empty list, populated list, and pagination actually slicing results correctly across pages.
 
 ## 4. What's NOT done yet
 
 - Posts have no create/edit form (list only)
 - Media has no upload flow (list only, no way to add a file)
-- No public API endpoint (e.g. `/api/pages`) for a separate frontend to consume
 - Block content is entered as raw JSON in the admin — no real visual editor
 - No automated tests
 - No CI/CD (explicitly deferred until the app itself is further along)
@@ -98,7 +98,7 @@ default sequence, not a locked contract.
 
 **Build next, in order:**
 
-1. Read-only REST API (Pages & Posts) — design in §6 below
+1. ~~Read-only REST API (Pages & Posts)~~ — done, 2026-09-15
 2. RBAC v2 — full design in [RBAC_PLAN.md](RBAC_PLAN.md)
 3. Media upload
 4. Collections system
@@ -118,13 +118,12 @@ it's correct as far as it goes, just hardcoded to three fixed roles.
 
 ### P1 — build these next, in this order
 
-1. **Read-only REST API for Pages & Posts** (design below, §6). The
-   data model already exists; this is mostly wiring around already-tested
-   queries, not design — the lowest-risk, fastest-value item on the whole
-   board. **Zero dependency on RBAC v2**: read endpoints are public and
-   stay public, so there's no reason to wait on the permissions rework.
-   Directly satisfies the original "public API for a separate frontend"
-   goal.
+1. ~~**Read-only REST API for Pages & Posts**~~ — **Done, 2026-09-15.**
+   4 routes (design below, §6), built hands-on with guidance rather than
+   written wholesale — verified end-to-end against real data (single-item
+   found/not-found, empty list, populated list, pagination slicing
+   correctly across pages). Directly satisfies the original "public API
+   for a separate frontend" goal.
 2. **RBAC v2 — database-driven roles & permissions** (full plan in
    [RBAC_PLAN.md](RBAC_PLAN.md)). Bigger than item 1,
    but it's the highest-leverage remaining piece: it's what Media upload,
