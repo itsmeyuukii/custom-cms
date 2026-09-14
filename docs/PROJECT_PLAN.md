@@ -86,13 +86,126 @@ correctly at its public URL with real data from the database.
 
 `npm run lint` and `npx tsc --noEmit` both pass clean as of this writing.
 
-## 5. Immediate next steps (pick what you want first)
+## 5. Roadmap & priorities
 
-1. Build the Collections system — see [COLLECTIONS_PLAN.md](COLLECTIONS_PLAN.md) (a Payload-CMS-style config-driven content system: define a collection's fields once, get an admin form + API for free). Posts becomes its first real use case, finally getting a create/edit UI.
-2. Media upload flow
-3. Once more of the plan is done: set up CI (lint/type-check/build on push) and decide on deployment
+Ordered by "do this before that," not just a wishlist — each phase either
+unblocks the next one or is cheap enough that there's no reason to delay
+it. Revisit this ordering any time priorities actually change; it's a
+default sequence, not a locked contract.
 
-## 6. Known gotchas (so you don't get stuck on these again)
+### P0 — fix now, before building on top of it
+
+1. **Close the authorization gap** — [SECURITY_REVIEW.md](SECURITY_REVIEW.md)
+   findings #1 and #2. `addBlock`/`setPageStatus` have no auth check, and
+   `Role` is never enforced anywhere. Everything else we build (REST API
+   write access, Collections access rules) assumes a working permission
+   model, so this needs to be real before more code depends on it —
+   otherwise every new feature inherits the same hole.
+
+### P1 — near-term, high value, low structural risk
+
+2. **Read-only REST API for Pages & Posts** (design below, §6). The data
+   model already exists; this is mostly wiring, not design. It directly
+   satisfies the original "public API for a separate frontend" goal
+   without waiting on the Collections system.
+3. **Media upload flow.** Needed for the Collections system's `upload`
+   field type to be useful, and independently useful right now (Hero/Card
+   Grid blocks already reference image URLs by hand).
+
+### P2 — the big structural investment
+
+4. **Collections system** — see [COLLECTIONS_PLAN.md](COLLECTIONS_PLAN.md).
+   Bigger than P1 items; once it lands, the hand-written Pages/Posts API
+   from step 2 generalizes into `/api/v1/:collection` per that plan's
+   phase 7, and Posts gets migrated to be its first real collection.
+5. Once Collections exists, **enforce its `access` config** on both the
+   admin UI and the REST API using the same role model fixed in P0 — one
+   permission system, not two.
+
+### P3 — polish & operations (once the above is stable)
+
+6. Rate limiting on login and on public API endpoints
+   ([SECURITY_REVIEW.md](SECURITY_REVIEW.md) finding #4)
+7. Automated tests
+8. CI (lint/type-check/build on push), then decide on a deployment target
+
+## 6. REST API design (P1 above)
+
+Goal: let a separate frontend (or any external client) read published
+content over HTTP, without touching the admin UI. Read-only to start —
+write access waits for the P0 authorization fix and reuses whatever role
+model comes out of it.
+
+### Routes
+
+Implemented as Next.js Route Handlers, versioned from day one so a future
+breaking change doesn't disturb existing consumers:
+
+```
+src/app/api/v1/pages/route.ts          GET  — list published pages
+src/app/api/v1/pages/[slug]/route.ts   GET  — one published page, blocks resolved
+src/app/api/v1/posts/route.ts          GET  — list published posts
+src/app/api/v1/posts/[slug]/route.ts   GET  — one published post
+```
+
+Both `[slug]` handlers reuse the exact same Prisma query already written
+in [src/app/[slug]/page.tsx](../src/app/[slug]/page.tsx) (`status:
+"PUBLISHED"` filter, `blocks` included ordered + joined to `component`) —
+this is why it's low-risk, low-effort work: no new query logic, just a
+JSON-serializing wrapper around queries that already exist and are
+already tested.
+
+### Response shape
+
+One consistent envelope, not a per-endpoint bespoke shape:
+
+```ts
+// success — single item
+{ "data": { ... } }
+
+// success — list
+{ "data": [ ... ], "meta": { "page": 1, "pageSize": 20, "total": 57 } }
+
+// error
+{ "error": { "code": "NOT_FOUND", "message": "..." } }
+```
+
+A small `src/lib/api-response.ts` helper (`apiSuccess(data, meta?)`,
+`apiError(code, message, status)`) keeps every route consistent instead
+of each one hand-rolling `NextResponse.json(...)`.
+
+Pagination: simple `?page=1&pageSize=20` query params (offset-based) to
+start — easy to reason about for a CMS-content use case, easy to `LIMIT`/
+`OFFSET` in the underlying Prisma call. Cap `pageSize` server-side (e.g.
+100) so a client can't request an unbounded result set.
+
+### Auth
+
+- **Read endpoints stay public**, same trust boundary as the existing
+  public `/[slug]` page: only ever return `status: "PUBLISHED"` content,
+  never draft/archived, regardless of who's asking.
+- **Write endpoints** (not built yet) go behind the same role
+  enforcement as the admin UI once P0 lands — no separate auth system.
+  For a headless client that isn't a logged-in browser session (e.g. a
+  build script), add a scoped `ApiKey` model (`key` hash, `role` or
+  explicit scopes, optional expiry) rather than expecting external
+  clients to hold NextAuth session cookies.
+- Rate limit before this is public-facing beyond localhost (P3, ties to
+  [SECURITY_REVIEW.md](SECURITY_REVIEW.md) finding #4) — an unauthenticated
+  read endpoint is also the easiest thing to hammer.
+
+### Relationship to the Collections system
+
+This hand-written Pages/Posts API is intentionally a stepping stone, not
+a parallel system to maintain forever. Once
+[COLLECTIONS_PLAN.md](COLLECTIONS_PLAN.md) phase 7 lands, its generic
+`/api/v1/:collection` and `/api/v1/:collection/:slug` routes are meant to
+absorb Posts (its first real collection) — `Page` can either stay
+hand-written (it has its own Block/Component rendering concerns a generic
+collection doesn't) or become a collection itself later; that's an open
+question, not a decision made yet.
+
+## 7. Known gotchas (so you don't get stuck on these again)
 
 - **Prisma 7 changed how the database URL is configured.** It's no longer in `schema.prisma` — it lives in `prisma.config.ts` and the actual Postgres connection happens through a "driver adapter" (`@prisma/adapter-pg`) passed into `PrismaClient`. Any online tutorial using `datasource db { url = env(...) }` is for an older Prisma version and won't work here.
 - **Next.js 16 renamed `middleware.ts` to `proxy.ts`.** We hit this directly — the old `middleware.ts` runs in the Edge runtime, which can't load Prisma's Postgres driver, and every `/admin` request 500'd until we renamed the file.
