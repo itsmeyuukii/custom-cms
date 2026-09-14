@@ -7,7 +7,15 @@ const adapter = new PrismaPg({ connectionString: process.env.DATABASE_URL });
 const prisma = new PrismaClient({ adapter });
 
 async function main() {
-  const passwordHash = await bcrypt.hash("changeme123", 10);
+  const password = process.env.SEED_USER_PASSWORD;
+  if (!password) {
+    console.warn(
+      'No SEED_USER_PASSWORD set - falling back to "changeme123". ' +
+        "Fine for local dev, but set SEED_USER_PASSWORD to a real value " +
+        "before seeding a shared or production database.",
+    );
+  }
+  const passwordHash = await bcrypt.hash(password ?? "changeme123", 10);
 
   const admin = await prisma.user.upsert({
     where: { email: "admin@example.com" },
@@ -92,7 +100,7 @@ async function main() {
   });
 
   console.log(
-    "Seeded users (all password: changeme123):",
+    "Seeded users:",
     admin.email,
     "(ADMIN),",
     "editor@example.com (EDITOR),",
