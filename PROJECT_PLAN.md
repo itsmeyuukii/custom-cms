@@ -4,7 +4,8 @@ Tracking file for this project. Update this as work progresses so it's always
 clear what's done, what's in progress, and what's next.
 
 GitHub repo: https://github.com/itsmeyuukii/custom-cms
-(local git initialized, remote `origin` set, **nothing pushed yet**)
+(pushed to `main`, history split into small logical commits — run
+`git log --oneline` to see them)
 
 ---
 
@@ -39,8 +40,10 @@ email-sending packages yet — those come later depending on priorities.
 
 ## 3. What's built so far
 
-**Not yet tested end-to-end** — no real database has been connected yet, so
-none of this has actually been run in a browser.
+**Tested end-to-end and working.** A local Postgres database is connected,
+migrated, and seeded. Verified by hand: logged in as the seeded admin,
+created a page with a Hero block via Prisma, and confirmed it rendered
+correctly at its public URL with real data from the database.
 
 - `prisma/schema.prisma` — the data model:
   - `User` (with `role`: ADMIN / EDITOR / VIEWER)
@@ -49,8 +52,8 @@ none of this has actually been run in a browser.
   - `Block` — one *instance* of a Component placed on a specific Page, with its own content
   - `Media` — uploaded file records (no upload UI yet, just the table)
 - `src/lib/auth.ts` — NextAuth config (email/password login, JWT sessions, role attached to session)
-- `src/lib/prisma.ts` — shared database client
-- `src/middleware.ts` — blocks `/admin/*` routes unless logged in
+- `src/lib/prisma.ts` — shared database client (Prisma 7 + the `@prisma/adapter-pg` driver adapter)
+- `src/proxy.ts` — blocks `/admin/*` routes unless logged in (this is Next.js 16's renamed replacement for `middleware.ts` — using the old name/Edge runtime broke Prisma's `pg` driver, see commit history)
 - `src/app/login` — a working login form
 - `src/app/admin` — a minimal admin area:
   - `/admin` — dashboard showing who's logged in
@@ -64,25 +67,30 @@ none of this has actually been run in a browser.
   - `BlockRenderer.tsx` — takes a Page's Blocks and renders each one via the registry
 - `prisma/seed.ts` — creates one admin login (`admin@example.com` / `changeme123`) and registers the two example Components, so there's something to click on/edit
 - `.env.example` — template of the environment variables needed (`DATABASE_URL`, `AUTH_SECRET`)
+- `.env` — your actual local values (gitignored, never committed). Currently points at a local Postgres database called `custom_cms` running on this machine.
+- `prisma/migrations/` — the migration that created all the tables, committed to git so anyone cloning the repo can run `prisma migrate deploy`/`dev` and get the same schema
 
 ## 4. What's NOT done yet
 
-- No real Postgres database is connected (need a connection string — local Postgres, or a hosted one like Supabase/Railway/Neon)
-- No migration has been run (`prisma migrate dev`) — the tables don't exist in any database yet
 - Posts have no create/edit form (list only)
 - Media has no upload flow (list only, no way to add a file)
 - No public API endpoint (e.g. `/api/pages`) for a separate frontend to consume
 - Block content is entered as raw JSON in the admin — no real visual editor
-- Nothing has been committed to git or pushed to GitHub
-- Lint/type-check was in progress when we paused (type-check passed; lint hadn't finished)
+- No automated tests
+- No CI/CD (explicitly deferred until the app itself is further along)
+
+`npm run lint` and `npx tsc --noEmit` both pass clean as of this writing.
 
 ## 5. Immediate next steps (pick what you want first)
 
-1. Get a real Postgres database (local install, or free hosted: Supabase / Neon / Railway) and put its connection string in `.env`
-2. Run `npm run prisma:migrate` to create the tables, then `npm run db:seed` for the sample admin + components
-3. Run `npm run dev` and click through: log in → create a page → add a Hero block → view it live
-4. Then decide what to build next: Post editor? Media upload? Public API?
-5. First git commit + push to GitHub (nothing has been pushed yet — say the word and I will, or you can review the files first)
+1. Decide what to build next: Post editor? Media upload? Public API? A real block-data editor instead of raw JSON?
+2. Once more of the plan is done: set up CI (lint/type-check/build on push) and decide on deployment
+
+## 6. Known gotchas (so you don't get stuck on these again)
+
+- **Prisma 7 changed how the database URL is configured.** It's no longer in `schema.prisma` — it lives in `prisma.config.ts` and the actual Postgres connection happens through a "driver adapter" (`@prisma/adapter-pg`) passed into `PrismaClient`. Any online tutorial using `datasource db { url = env(...) }` is for an older Prisma version and won't work here.
+- **Next.js 16 renamed `middleware.ts` to `proxy.ts`.** We hit this directly — the old `middleware.ts` runs in the Edge runtime, which can't load Prisma's Postgres driver, and every `/admin` request 500'd until we renamed the file.
+- **The local Postgres password was reset once**, on 2026-09-14, to get a working connection (nobody on this project had the original password). New password lives only in `.env` (gitignored).
 
 ---
 *This file is meant to be kept up to date — ask to have it revised as things change.*
