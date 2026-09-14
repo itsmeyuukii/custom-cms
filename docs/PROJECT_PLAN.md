@@ -83,8 +83,9 @@ correctly at its public URL with real data from the database.
 
 ## 5. Immediate next steps (pick what you want first)
 
-1. Decide what to build next: Post editor? Media upload? Public API? A real block-data editor instead of raw JSON?
-2. Once more of the plan is done: set up CI (lint/type-check/build on push) and decide on deployment
+1. Build the Collections system — see [COLLECTIONS_PLAN.md](COLLECTIONS_PLAN.md) (a Payload-CMS-style config-driven content system: define a collection's fields once, get an admin form + API for free). Posts becomes its first real use case, finally getting a create/edit UI.
+2. Media upload flow
+3. Once more of the plan is done: set up CI (lint/type-check/build on push) and decide on deployment
 
 ## 6. Known gotchas (so you don't get stuck on these again)
 
