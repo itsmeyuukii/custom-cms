@@ -10,8 +10,8 @@ attack surface not covered here.
 
 | # | Finding | Severity | Status |
 |---|---|---|---|
-| 1 | Missing authorization on `addBlock` / `setPageStatus` server actions | **Critical** | Open |
-| 2 | `Role` (ADMIN/EDITOR/VIEWER) is never actually enforced anywhere | **High** | Open |
+| 1 | Missing authorization on `addBlock` / `setPageStatus` server actions | **Critical** | **Fixed** (2026-09-15) |
+| 2 | `Role` (ADMIN/EDITOR/VIEWER) is never actually enforced anywhere | **High** | **Fixed** (2026-09-15) |
 | 3 | Block `data` accepted with no validation against its Component's schema, no size limit | Medium | Open |
 | 4 | No rate limiting on login | Medium | Open |
 | 5 | Seeded admin password is weak and documented in plaintext | Medium | Open — expected for local dev, must rotate before any shared/prod use |
@@ -21,7 +21,11 @@ attack surface not covered here.
 
 ---
 
-## 1. Missing authorization on `addBlock` / `setPageStatus` — Critical
+## 1. Missing authorization on `addBlock` / `setPageStatus` — Critical — Fixed
+
+**Fixed 2026-09-15** by the same change as finding #2 below — see that
+entry for the actual fix (both were closed by the same RBAC pass, since
+proper role enforcement necessarily includes an auth check).
 
 **File:** [src/app/admin/pages/actions.ts](../src/app/admin/pages/actions.ts)
 
@@ -54,23 +58,45 @@ and publish/unpublish/archive any page.
 **Fix:** add `const session = await auth(); if (!session?.user?.id) throw
 new Error("Not authenticated");` to both functions, matching `createPage`.
 
-## 2. `Role` is decorative — never enforced — High
+## 2. `Role` is decorative — never enforced — High — Fixed
 
-**Files:** [src/proxy.ts](../src/proxy.ts),
-[src/app/admin/pages/actions.ts](../src/app/admin/pages/actions.ts)
+**Fixed 2026-09-15.** Added [src/lib/rbac.ts](../src/lib/rbac.ts):
+`WRITE_ROLES = ["ADMIN", "EDITOR"]`, `hasRole(role, allowed)` (plain
+boolean, for UI conditionals), and `requireRole(allowed)` (throws
+`"Forbidden: insufficient permissions"` if there's no session or the
+session's role isn't in `allowed` — this closes finding #1 too, since it
+necessarily checks auth first).
 
-The only place `role` is even read is
-[src/app/admin/page.tsx:9](../src/app/admin/page.tsx#L9), to *display* it.
-`proxy.ts` only checks "is there a session" — not what role it belongs to.
-So the `VIEWER` role (explicitly modeled in `prisma/schema.prisma` as a
-role that should presumably *not* be able to edit content) currently has
-identical write access to `ADMIN`.
+Applied to:
+- `createPage`, `addBlock`, `setPageStatus` in
+  [src/app/admin/pages/actions.ts](../src/app/admin/pages/actions.ts) —
+  all three now call `requireRole(WRITE_ROLES)` before touching the
+  database.
+- The admin UI reflects the same rule instead of just relying on the
+  action throwing: the "New Page" link
+  ([src/app/admin/pages/page.tsx](../src/app/admin/pages/page.tsx)), the
+  status-change buttons and "Add Block" form
+  ([src/app/admin/pages/[id]/page.tsx](../src/app/admin/pages/%5Bid%5D/page.tsx))
+  only render for `ADMIN`/`EDITOR`, and `/admin/pages/new`
+  ([src/app/admin/pages/new/page.tsx](../src/app/admin/pages/new/page.tsx))
+  redirects a `VIEWER` back to `/admin/pages` if they navigate there
+  directly by URL.
+- `prisma/seed.ts` now seeds `editor@example.com` and `viewer@example.com`
+  (both password `changeme123`) alongside the existing admin, so all
+  three roles are actually testable.
 
-**Fix:** decide the actual permission model (likely: VIEWER = read-only in
-admin, EDITOR = create/edit but not publish or manage users, ADMIN =
-everything) and enforce it in every server action — e.g. a small
-`requireRole(session, ["ADMIN", "EDITOR"])` helper called at the top of
-each action, not just `requireAuth`.
+**Verified**, not just written: logged in as all three seeded roles and
+hit a route exercising `requireRole` directly — VIEWER got `403
+Forbidden`, EDITOR and ADMIN got `200`, no session got `403`. Also
+confirmed via the real admin UI: the "New Page" link and write controls
+are absent for VIEWER and present for EDITOR/ADMIN, and VIEWER is
+redirected away from `/admin/pages/new` on direct navigation.
+
+**Still open:** this is binary (write-capable vs not) — there's no
+distinction yet between EDITOR and ADMIN (e.g. "EDITOR can't publish, only
+ADMIN can" was floated as an option but not implemented, to keep this
+change minimal). Revisit if that distinction turns out to matter before
+the Collections system's own `access` config subsumes this.
 
 ## 3. Block data has no schema validation or size limit — Medium
 
@@ -161,6 +187,9 @@ per finding #2).
 
 ---
 
-*Findings #1 and #2 are the ones worth fixing before doing anything else
-— they mean the `Role` model this app is built around isn't actually
-providing any protection yet.*
+*Findings #1 and #2 (the ones that mattered most — they meant the `Role`
+model this app is built around wasn't actually providing any protection)
+are fixed as of 2026-09-15. Next worth doing: #3 (block data validation)
+and #4 (login rate limiting) — see
+[PROJECT_PLAN.md](PROJECT_PLAN.md) §5 for how these fit into the overall
+roadmap.*

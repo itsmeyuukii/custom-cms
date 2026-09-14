@@ -57,6 +57,7 @@ correctly at its public URL with real data from the database.
   - `Block` — one *instance* of a Component placed on a specific Page, with its own content
   - `Media` — uploaded file records (no upload UI yet, just the table)
 - `src/lib/auth.ts` — NextAuth config (email/password login, JWT sessions, role attached to session)
+- `src/lib/rbac.ts` — role-based access control (`requireRole`/`hasRole`), enforced on every Pages write action and reflected in the admin UI (VIEWER is read-only; ADMIN/EDITOR can write)
 - `src/lib/prisma.ts` — shared database client (Prisma 7 + the `@prisma/adapter-pg` driver adapter)
 - `src/proxy.ts` — blocks `/admin/*` routes unless logged in (this is Next.js 16's renamed replacement for `middleware.ts` — using the old name/Edge runtime broke Prisma's `pg` driver, see commit history)
 - `src/app/login` — a working login form
@@ -70,7 +71,7 @@ correctly at its public URL with real data from the database.
   - `Hero.tsx`, `CardGrid.tsx` — two example components
   - `registry.tsx` — maps a Component's database `key` to the real React component
   - `BlockRenderer.tsx` — takes a Page's Blocks and renders each one via the registry
-- `prisma/seed.ts` — creates one admin login (`admin@example.com` / `changeme123`) and registers the two example Components, so there's something to click on/edit
+- `prisma/seed.ts` — creates one login per role (`admin@example.com` / `editor@example.com` / `viewer@example.com`, all password `changeme123`) and registers the two example Components, so there's something to click on/edit and every role is testable
 - `.env.example` — template of the environment variables needed (`DATABASE_URL`, `AUTH_SECRET`)
 - `.env` — your actual local values (gitignored, never committed). Currently points at a local Postgres database called `custom_cms` running on this machine.
 - `prisma/migrations/` — the migration that created all the tables, committed to git so anyone cloning the repo can run `prisma migrate deploy`/`dev` and get the same schema
@@ -95,12 +96,13 @@ default sequence, not a locked contract.
 
 ### P0 — fix now, before building on top of it
 
-1. **Close the authorization gap** — [SECURITY_REVIEW.md](SECURITY_REVIEW.md)
-   findings #1 and #2. `addBlock`/`setPageStatus` have no auth check, and
-   `Role` is never enforced anywhere. Everything else we build (REST API
-   write access, Collections access rules) assumes a working permission
-   model, so this needs to be real before more code depends on it —
-   otherwise every new feature inherits the same hole.
+1. ~~**Close the authorization gap**~~ — **Done, 2026-09-15.** See
+   [SECURITY_REVIEW.md](SECURITY_REVIEW.md) findings #1/#2 and
+   [src/lib/rbac.ts](../src/lib/rbac.ts): `requireRole()`/`hasRole()`
+   with a `WRITE_ROLES = ["ADMIN", "EDITOR"]` list, enforced in every
+   Pages write action and reflected in the admin UI. Verified against all
+   three seeded roles. Still binary (write-capable or not) — no
+   EDITOR-vs-ADMIN distinction yet; revisit if that turns out to matter.
 
 ### P1 — near-term, high value, low structural risk
 
