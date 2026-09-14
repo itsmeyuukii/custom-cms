@@ -18,29 +18,29 @@ permissions to)
 
 ## 1. Decisions made
 
-| Decision | Choice | Why |
-|---|---|---|
-| Framework | Next.js (TypeScript, App Router, Tailwind) | One full-stack app — frontend + backend in one codebase |
-| Database | PostgreSQL | Relational, good fit for structured content (pages, posts, users) |
-| ORM | Prisma | Type-safe database access, generates a client from `prisma/schema.prisma` |
-| Auth | NextAuth v5 (Credentials provider: email + password) | Login + roles (Admin / Editor / Viewer) |
+| Decision      | Choice                                                          | Why                                                                                                                                                  |
+| ------------- | --------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Framework     | Next.js (TypeScript, App Router, Tailwind)                      | One full-stack app — frontend + backend in one codebase                                                                                              |
+| Database      | PostgreSQL                                                      | Relational, good fit for structured content (pages, posts, users)                                                                                    |
+| ORM           | Prisma                                                          | Type-safe database access, generates a client from `prisma/schema.prisma`                                                                            |
+| Auth          | NextAuth v5 (Credentials provider: email + password)            | Login + roles (Admin / Editor / Viewer)                                                                                                              |
 | Content model | Pages & Posts, made of reusable "Components" placed as "Blocks" | So a Page is built by picking components (Hero, Card Grid, etc.) and filling in their content — this is the "components to use in pages" requirement |
 
 ## 2. Packages installed (and what each is for)
 
-| Package | Role |
-|---|---|
-| `next`, `react`, `react-dom` | The web framework itself |
-| `tailwindcss` | Styling |
-| `typescript`, `@types/*` | Type checking |
-| `eslint`, `eslint-config-next` | Code linting |
-| `prisma`, `@prisma/client` | Database ORM — defines the data model and talks to Postgres |
-| `@prisma/adapter-pg`, `pg` | Prisma 7 requires a "driver adapter" to actually connect to Postgres (this is new in Prisma 7 vs older tutorials you may see online) |
-| `dotenv` | Loads `.env` values for Prisma's config file |
-| `next-auth` (v5 beta) | Login/session handling |
-| `@auth/prisma-adapter` | Lets NextAuth store users/sessions in the Postgres database via Prisma |
-| `bcryptjs` | Hashes passwords before storing them |
-| `tsx` | Lets us run TypeScript seed scripts directly (`npm run db:seed`) |
+| Package                        | Role                                                                                                                                 |
+| ------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------ |
+| `next`, `react`, `react-dom`   | The web framework itself                                                                                                             |
+| `tailwindcss`                  | Styling                                                                                                                              |
+| `typescript`, `@types/*`       | Type checking                                                                                                                        |
+| `eslint`, `eslint-config-next` | Code linting                                                                                                                         |
+| `prisma`, `@prisma/client`     | Database ORM — defines the data model and talks to Postgres                                                                          |
+| `@prisma/adapter-pg`, `pg`     | Prisma 7 requires a "driver adapter" to actually connect to Postgres (this is new in Prisma 7 vs older tutorials you may see online) |
+| `dotenv`                       | Loads `.env` values for Prisma's config file                                                                                         |
+| `next-auth` (v5 beta)          | Login/session handling                                                                                                               |
+| `@auth/prisma-adapter`         | Lets NextAuth store users/sessions in the Postgres database via Prisma                                                               |
+| `bcryptjs`                     | Hashes passwords before storing them                                                                                                 |
+| `tsx`                          | Lets us run TypeScript seed scripts directly (`npm run db:seed`)                                                                     |
 
 Nothing else has been installed. No hosting, deployment, image upload, or
 email-sending packages yet — those come later depending on priorities.
@@ -55,8 +55,8 @@ correctly at its public URL with real data from the database.
 - `prisma/schema.prisma` — the data model:
   - `User` (with `role`: ADMIN / EDITOR / VIEWER)
   - `Page`, `Post` — content, with a `status` (DRAFT / PUBLISHED / ARCHIVED)
-  - `Component` — a reusable block *definition* (e.g. "Hero", "Card Grid")
-  - `Block` — one *instance* of a Component placed on a specific Page, with its own content
+  - `Component` — a reusable block _definition_ (e.g. "Hero", "Card Grid")
+  - `Block` — one _instance_ of a Component placed on a specific Page, with its own content
   - `Media` — uploaded file records (no upload UI yet, just the table)
 - `src/lib/auth.ts` — NextAuth config (email/password login, JWT sessions, role attached to session)
 - `src/lib/rbac.ts` — role-based access control (`requireRole`/`hasRole`), enforced on every Pages write action and reflected in the admin UI (VIEWER is read-only; ADMIN/EDITOR can write)
@@ -206,8 +206,7 @@ of each one hand-rolling `NextResponse.json(...)`.
 
 Pagination: simple `?page=1&pageSize=20` query params (offset-based) to
 start — easy to reason about for a CMS-content use case, easy to `LIMIT`/
-`OFFSET` in the underlying Prisma call. Cap `pageSize` server-side (e.g.
-100) so a client can't request an unbounded result set.
+`OFFSET` in the underlying Prisma call. Cap `pageSize` server-side (e.g. 100) so a client can't request an unbounded result set.
 
 ### Auth
 
@@ -243,4 +242,5 @@ question, not a decision made yet.
 - **The local Postgres password was reset once**, on 2026-09-14, to get a working connection (nobody on this project had the original password). New password lives only in `.env` (gitignored).
 
 ---
-*This file is meant to be kept up to date — ask to have it revised as things change.*
+
+_This file is meant to be kept up to date — ask to have it revised as things change._

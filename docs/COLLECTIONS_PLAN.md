@@ -3,7 +3,8 @@
 Goal: a Payload-style config-driven content system, built on our own stack
 (Next.js + Prisma + Postgres), so adding a new content type is "write a
 config object" instead of "write a Prisma model + migration + admin pages
-+ API route" by hand every time.
+
+- API route" by hand every time.
 
 **Status: design only, nothing in this doc is implemented yet.**
 
@@ -23,7 +24,7 @@ already does one thing well: composing a page out of reusable, positioned
 blocks (Hero, Card Grid, etc.), and it maps cleanly onto Payload's
 "Blocks" field type. It stays as-is.
 
-What's missing is everything *else* — Posts (currently just a stub list,
+What's missing is everything _else_ — Posts (currently just a stub list,
 no create/edit form), and any future content type (team members, products,
 FAQs...) — each of which would otherwise need its own hand-written Prisma
 model + migration + admin pages, exactly like `Page` did. The Collections
@@ -83,10 +84,10 @@ export type FieldType =
   | "blocks"; // reuses the existing Component/Block registry
 
 interface BaseField {
-  name: string;              // key inside `data`
-  label?: string;            // defaults to a title-cased `name`
+  name: string; // key inside `data`
+  label?: string; // defaults to a title-cased `name`
   required?: boolean;
-  unique?: boolean;          // enforced in app code (e.g. slug fields)
+  unique?: boolean; // enforced in app code (e.g. slug fields)
 }
 
 export interface TextField extends BaseField {
@@ -117,12 +118,12 @@ export interface SelectField extends BaseField {
 
 export interface RelationshipField extends BaseField {
   type: "relationship";
-  to: string;      // another collection's slug
+  to: string; // another collection's slug
   many?: boolean;
 }
 
 export interface UploadField extends BaseField {
-  type: "upload";  // references an existing Media row by id
+  type: "upload"; // references an existing Media row by id
 }
 
 export interface ArrayField extends BaseField {
@@ -136,15 +137,22 @@ export interface BlocksField extends BaseField {
 }
 
 export type Field =
-  | TextField | NumberField | BooleanField | DateField
-  | SelectField | RelationshipField | UploadField | ArrayField | BlocksField;
+  | TextField
+  | NumberField
+  | BooleanField
+  | DateField
+  | SelectField
+  | RelationshipField
+  | UploadField
+  | ArrayField
+  | BlocksField;
 
 export interface CollectionConfig {
-  slug: string;              // e.g. "posts" — matches Document.collection
+  slug: string; // e.g. "posts" — matches Document.collection
   label: string;
   labelPlural?: string;
   fields: Field[];
-  slugField?: string;        // which field (if any) maps to Document.slug
+  slugField?: string; // which field (if any) maps to Document.slug
   access?: {
     read?: "public" | Role[];
     create?: Role[];

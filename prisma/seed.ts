@@ -48,7 +48,8 @@ async function main() {
     create: {
       key: "hero",
       name: "Hero",
-      description: "Large banner with heading, subtext, and a call-to-action button.",
+      description:
+        "Large banner with heading, subtext, and a call-to-action button.",
       schema: {
         type: "object",
         properties: {
@@ -68,7 +69,8 @@ async function main() {
     create: {
       key: "card-grid",
       name: "Card Grid",
-      description: "A responsive grid of cards, each with an image, title, and description.",
+      description:
+        "A responsive grid of cards, each with an image, title, and description.",
       schema: {
         type: "object",
         properties: {
@@ -91,9 +93,10 @@ async function main() {
 
   console.log(
     "Seeded users (all password: changeme123):",
-    admin.email, "(ADMIN),",
+    admin.email,
+    "(ADMIN),",
     "editor@example.com (EDITOR),",
-    "viewer@example.com (VIEWER)"
+    "viewer@example.com (VIEWER)",
   );
 }
 

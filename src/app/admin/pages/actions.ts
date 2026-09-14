@@ -55,7 +55,10 @@ export async function addBlock(pageId: string, formData: FormData) {
   revalidatePath(`/admin/pages/${pageId}`);
 }
 
-export async function setPageStatus(pageId: string, status: "DRAFT" | "PUBLISHED" | "ARCHIVED") {
+export async function setPageStatus(
+  pageId: string,
+  status: "DRAFT" | "PUBLISHED" | "ARCHIVED",
+) {
   await requireRole(WRITE_ROLES);
 
   await prisma.page.update({

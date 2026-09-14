@@ -8,16 +8,16 @@ attack surface not covered here.
 
 ## Summary
 
-| # | Finding | Severity | Status |
-|---|---|---|---|
-| 1 | Missing authorization on `addBlock` / `setPageStatus` server actions | **Critical** | **Fixed** (2026-09-15) |
-| 2 | `Role` (ADMIN/EDITOR/VIEWER) is never actually enforced anywhere | **High** | **Fixed** (2026-09-15) |
-| 3 | Block `data` accepted with no validation against its Component's schema, no size limit | Medium | Open |
-| 4 | No rate limiting on login | Medium | Open |
-| 5 | Seeded admin password is weak and documented in plaintext | Medium | Open — expected for local dev, must rotate before any shared/prod use |
-| 6 | 4 high-severity advisories in Prisma CLI's transitive deps (`mysql2`, `deepmerge-ts`) | Low | Open, dev-tooling only |
-| 7 | No security headers configured (CSP, `X-Frame-Options`, etc.) | Low | Open |
-| 8 | `CardGrid` renders admin-supplied `imageUrl` with no allow-list | Low | Open |
+| #   | Finding                                                                                | Severity     | Status                                                                |
+| --- | -------------------------------------------------------------------------------------- | ------------ | --------------------------------------------------------------------- |
+| 1   | Missing authorization on `addBlock` / `setPageStatus` server actions                   | **Critical** | **Fixed** (2026-09-15)                                                |
+| 2   | `Role` (ADMIN/EDITOR/VIEWER) is never actually enforced anywhere                       | **High**     | **Fixed** (2026-09-15)                                                |
+| 3   | Block `data` accepted with no validation against its Component's schema, no size limit | Medium       | Open                                                                  |
+| 4   | No rate limiting on login                                                              | Medium       | Open                                                                  |
+| 5   | Seeded admin password is weak and documented in plaintext                              | Medium       | Open — expected for local dev, must rotate before any shared/prod use |
+| 6   | 4 high-severity advisories in Prisma CLI's transitive deps (`mysql2`, `deepmerge-ts`)  | Low          | Open, dev-tooling only                                                |
+| 7   | No security headers configured (CSP, `X-Frame-Options`, etc.)                          | Low          | Open                                                                  |
+| 8   | `CardGrid` renders admin-supplied `imageUrl` with no allow-list                        | Low          | Open                                                                  |
 
 ---
 
@@ -47,7 +47,7 @@ Server Actions, which Next.js turns into real POST endpoints. Their
 action reference is embedded in the page's HTML/RSC payload, so anyone
 who can load `/admin/pages/[id]` can extract it and call these actions
 directly, bypassing the UI entirely, whether or not they're even logged
-in — `proxy.ts` gates the *page* `/admin/*`, but does not automatically
+in — `proxy.ts` gates the _page_ `/admin/*`, but does not automatically
 gate every server action reachable from it.
 
 **Impact:** any authenticated session (even none, if the action is called
@@ -68,6 +68,7 @@ session's role isn't in `allowed` — this closes finding #1 too, since it
 necessarily checks auth first).
 
 Applied to:
+
 - `createPage`, `addBlock`, `setPageStatus` in
   [src/app/admin/pages/actions.ts](../src/app/admin/pages/actions.ts) —
   all three now call `requireRole(WRITE_ROLES)` before touching the
@@ -169,7 +170,7 @@ non-privileged users can influence this data (e.g. Collections system,
 or if `EDITOR`/`VIEWER` ever get scoped-down but still-real write access
 per finding #2).
 
-## Confirmed *not* vulnerable (checked, worth stating explicitly)
+## Confirmed _not_ vulnerable (checked, worth stating explicitly)
 
 - **SQL injection**: no raw `$queryRaw`/`$executeRaw` anywhere — every
   query goes through Prisma's parameterized query builder.
@@ -187,9 +188,9 @@ per finding #2).
 
 ---
 
-*Findings #1 and #2 (the ones that mattered most — they meant the `Role`
+_Findings #1 and #2 (the ones that mattered most — they meant the `Role`
 model this app is built around wasn't actually providing any protection)
 are fixed as of 2026-09-15. Next worth doing: #3 (block data validation)
 and #4 (login rate limiting) — see
 [PROJECT_PLAN.md](PROJECT_PLAN.md) §5 for how these fit into the overall
-roadmap.*
+roadmap._

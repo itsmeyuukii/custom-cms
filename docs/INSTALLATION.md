@@ -3,7 +3,7 @@
 Every command actually run to get this project from an empty folder to a
 working app, in order. Use this to reproduce the setup elsewhere, or to
 understand why a given package/config exists. See [PROJECT_PLAN.md](PROJECT_PLAN.md)
-for what the result is, this file is about *how we got there*.
+for what the result is, this file is about _how we got there_.
 
 Prerequisites used: Node.js 24, npm 11, Windows with PowerShell, a Git repo
 already created on GitHub to push to.
@@ -44,7 +44,7 @@ npm install prisma @prisma/client --save
 
 > **Gotcha:** npm's `latest` tag for `prisma` pointed at an `8.0.0-rc`
 > (release candidate), not a stable version. Check `npm view prisma
-> dist-tags` before trusting `latest` on a fast-moving package. We pinned
+dist-tags` before trusting `latest` on a fast-moving package. We pinned
 > to the last stable release instead:
 
 ```bash

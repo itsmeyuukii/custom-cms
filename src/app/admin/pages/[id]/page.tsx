@@ -41,7 +41,10 @@ export default async function EditPage({
       {canWrite && (
         <div className="mt-2 flex gap-2">
           {(["DRAFT", "PUBLISHED", "ARCHIVED"] as const).map((status) => (
-            <form key={status} action={setPageStatus.bind(null, page.id, status)}>
+            <form
+              key={status}
+              action={setPageStatus.bind(null, page.id, status)}
+            >
               <button
                 type="submit"
                 disabled={page.status === status}
@@ -57,7 +60,10 @@ export default async function EditPage({
       <h2 className="mt-8 font-semibold">Blocks</h2>
       <ul className="mt-2 space-y-2">
         {page.blocks.map((block) => (
-          <li key={block.id} className="rounded border border-gray-200 p-3 text-sm">
+          <li
+            key={block.id}
+            className="rounded border border-gray-200 p-3 text-sm"
+          >
             <span className="font-medium">{block.component.name}</span>
             <pre className="mt-1 overflow-x-auto text-xs text-gray-500">
               {JSON.stringify(block.data, null, 2)}
@@ -96,7 +102,10 @@ export default async function EditPage({
                 className="mt-1 w-full rounded border border-gray-300 px-3 py-2 font-mono text-xs"
               />
             </div>
-            <button type="submit" className="rounded bg-black px-4 py-2 text-sm text-white">
+            <button
+              type="submit"
+              className="rounded bg-black px-4 py-2 text-sm text-white"
+            >
               Add Block
             </button>
           </form>

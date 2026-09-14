@@ -5,7 +5,10 @@ import { auth } from "@/lib/auth";
 export const WRITE_ROLES: Role[] = ["ADMIN", "EDITOR"];
 
 /** Plain boolean check, for conditionally rendering UI. */
-export function hasRole(role: Role | undefined | null, allowed: Role[]): boolean {
+export function hasRole(
+  role: Role | undefined | null,
+  allowed: Role[],
+): boolean {
   return !!role && allowed.includes(role);
 }
 

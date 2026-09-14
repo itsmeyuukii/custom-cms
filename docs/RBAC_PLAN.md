@@ -122,8 +122,8 @@ about rather than defaulting blindly:
   in the JWT (`WHERE role.slug IN (...)`, one indexed query, joined
   through `RolePermission`) — not cached in the token.
 
-Net effect: revoking a *role* from a user takes a re-login; revoking a
-*permission* from a role takes effect immediately for everyone who has
+Net effect: revoking a _role_ from a user takes a re-login; revoking a
+_permission_ from a role takes effect immediately for everyone who has
 that role. That split matches which operation is actually common (tuning
 what a department can do) vs. rare (moving a person between departments).
 
@@ -133,12 +133,16 @@ what a department can do) vs. rare (moving a person between departments).
 // requirePermission replaces requireRole; same call-site shape
 export async function requirePermission(key: string) {
   const session = await auth();
-  if (!session?.user?.id) throw new Error("Forbidden: insufficient permissions");
+  if (!session?.user?.id)
+    throw new Error("Forbidden: insufficient permissions");
 
   const allowed = await prisma.rolePermission.findFirst({
     where: {
       permission: { key },
-      role: { slug: { in: session.user.roleSlugs }, users: { some: { userId: session.user.id } } },
+      role: {
+        slug: { in: session.user.roleSlugs },
+        users: { some: { userId: session.user.id } },
+      },
     },
   });
 
@@ -146,7 +150,10 @@ export async function requirePermission(key: string) {
   return session;
 }
 
-export async function hasPermission(userId: string, key: string): Promise<boolean> {
+export async function hasPermission(
+  userId: string,
+  key: string,
+): Promise<boolean> {
   // same query, boolean return — for UI conditionals
 }
 ```
@@ -228,18 +235,18 @@ access-control idioms.
 2. `requirePermission`/`hasPermission`, ported call sites in
    `actions.ts` and the admin Pages UI (mechanical, same shape as today).
 3. `/admin/roles` — view and edit permission bundles for existing seeded
-   roles first (no *creation* yet — lower risk, proves the query shape
+   roles first (no _creation_ yet — lower risk, proves the query shape
    works).
 4. `/admin/users` + role assignment UI.
-5. Role *creation* from the admin UI (the actual "make a Marketing
+5. Role _creation_ from the admin UI (the actual "make a Marketing
    department" moment) — last, once editing/assignment are proven solid.
 6. Drop the old enum column (§6 step 5).
 
 ## Open questions
 
-- Should a role's permissions ever be scoped to *specific* content
+- Should a role's permissions ever be scoped to _specific_ content
   (e.g. "Marketing can edit page X but not page Y"), or is
-  resource-*type*-level enough for now (Marketing can edit any page)?
+  resource-_type_-level enough for now (Marketing can edit any page)?
   This plan assumes type-level only — per-item scoping is a much bigger
   feature (closer to a full ACL system) and nothing today suggests it's
   needed yet.

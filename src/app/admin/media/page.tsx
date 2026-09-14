@@ -12,11 +12,16 @@ export default async function AdminMediaLibrary() {
 
       <ul className="mt-6 grid grid-cols-2 gap-4 sm:grid-cols-4">
         {media.map((item) => (
-          <li key={item.id} className="rounded border border-gray-200 p-2 text-xs">
+          <li
+            key={item.id}
+            className="rounded border border-gray-200 p-2 text-xs"
+          >
             <div className="truncate">{item.filename}</div>
           </li>
         ))}
-        {media.length === 0 && <li className="text-sm text-gray-400">No media yet.</li>}
+        {media.length === 0 && (
+          <li className="text-sm text-gray-400">No media yet.</li>
+        )}
       </ul>
     </div>
   );

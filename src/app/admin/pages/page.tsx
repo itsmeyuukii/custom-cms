@@ -37,7 +37,10 @@ export default async function AdminPagesList() {
           {pages.map((page) => (
             <tr key={page.id} className="border-b border-gray-100">
               <td className="py-2">
-                <Link href={`/admin/pages/${page.id}`} className="hover:underline">
+                <Link
+                  href={`/admin/pages/${page.id}`}
+                  className="hover:underline"
+                >
                   {page.title}
                 </Link>
               </td>
