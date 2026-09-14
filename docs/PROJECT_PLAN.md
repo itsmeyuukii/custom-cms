@@ -154,10 +154,21 @@ it's correct as far as it goes, just hardcoded to three fixed roles.
 
 ### P3 — polish & operations (once the above is stable)
 
-6. Rate limiting on login and on public API endpoints
+6. ~~CI (lint/type-check on push)~~ — **Done, 2026-09-15**, pulled
+   forward out of P3 on request since it's independent of everything
+   else. `.github/workflows/ci.yml` runs on every push to `main` and
+   every PR: `npm install`, `prisma generate`, `next typegen`, then
+   `format:check` + `lint` + `typecheck`. Hit two real issues getting it
+   green — worth knowing about, see §7 gotchas below. **Not yet done:**
+   making this a required check in GitHub's branch protection settings
+   (so a failing PR is actually blocked from merging, not just flagged)
+   — that's a repo-settings change only doable from the GitHub UI itself.
+7. Rate limiting on login and on public API endpoints
    ([SECURITY_REVIEW.md](SECURITY_REVIEW.md) finding #4)
-7. Automated tests
-8. CI (lint/type-check/build on push), then decide on a deployment target
+8. Automated tests
+9. Deployment target — **in progress**: Vercel account created, plan is
+   Vercel (app hosting) + Neon (Postgres), both free-tier. Not deployed
+   yet.
 
 ## 6. REST API design (P1 item 1 above)
 
@@ -240,6 +251,8 @@ question, not a decision made yet.
 - **Prisma 7 changed how the database URL is configured.** It's no longer in `schema.prisma` — it lives in `prisma.config.ts` and the actual Postgres connection happens through a "driver adapter" (`@prisma/adapter-pg`) passed into `PrismaClient`. Any online tutorial using `datasource db { url = env(...) }` is for an older Prisma version and won't work here.
 - **Next.js 16 renamed `middleware.ts` to `proxy.ts`.** We hit this directly — the old `middleware.ts` runs in the Edge runtime, which can't load Prisma's Postgres driver, and every `/admin` request 500'd until we renamed the file.
 - **The local Postgres password was reset once**, on 2026-09-14, to get a working connection (nobody on this project had the original password). New password lives only in `.env` (gitignored).
+- **`npm ci` can fail in CI even when `npm install` works fine on your own machine.** We hit this: `package-lock.json` had incomplete entries for `@emnapi/runtime`/`@emnapi/core` — optional WASM-fallback dependencies of `sharp` with genuinely conflicting version requirements from different packages, which npm on Windows didn't fully resolve into the lockfile even after a clean reinstall. Fix was using `npm install` in CI instead of `npm ci` — slightly less strict, but sidesteps this class of cross-platform optional-dependency issue entirely. If `npm ci` ever fails in CI with "Missing: X from lock file" while `npm install` works locally, this is why.
+- **`tsc --noEmit` can pass locally but fail in CI on Next.js's generated types** (e.g. `Cannot find name 'LayoutProps'`). `tsconfig.json` includes `.next/types/**` — but there are _two separate_ generated-types locations: `.next/types/` (from `next build` or `next typegen`) and `.next/dev/types/` (from `next dev`, populated the first time you ever run the dev server on a machine). Once you've run `next dev` locally even once, `tsc` quietly succeeds using the dev-server copy, masking that `.next/types/` was never generated — which CI, having never run `next dev`, doesn't have. Fix: run `npx next typegen` (generates types without a full build) before type-checking in CI.
 
 ---
 
