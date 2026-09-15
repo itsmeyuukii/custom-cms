@@ -96,7 +96,6 @@ correctly at its public URL with real data from the database.
 - RBAC v2 (database-driven roles), Collections system — designed, not built
 - Branch protection not configured — CI reports status but doesn't yet block a failing merge
 - No rate limiting (login or public API)
-- Production database has no seeded users yet (schema migrated, not seeded — password needs to be set deliberately, see §3)
 
 `npm run format:check`, `npm run lint`, and `npm run typecheck` all pass
 clean as of this writing, and CI runs all three on every push/PR.
@@ -184,10 +183,12 @@ it's correct as far as it goes, just hardcoded to three fixed roles.
    Prisma Postgres integration turned out to be the smoother path than
    a separate Neon signup). See §7 gotchas — this took several real
    fixes to get working (env var wiring, build script, deployment
-   protection). Still needed: seed the production database with real
-   users (schema is migrated, not seeded — see §3), and disable
-   Deployment Protection for non-canonical URLs if those need to be
-   public too (canonical production URL is already public).
+   protection). Production database is migrated _and_ seeded (admin/
+   editor/viewer accounts, real password, verified via an actual login
+   against the live site). Still open: Deployment Protection is still
+   on for non-canonical URLs (fine, canonical production URL is
+   already public — only matters if those other URLs need to be public
+   too).
 
 ## 6. REST API design (P1 item 1 above)
 
