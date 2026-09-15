@@ -7,7 +7,12 @@ GitHub repo: https://github.com/itsmeyuukii/custom-cms
 (pushed to `main`, history split into small logical commits — run
 `git log --oneline` to see them)
 
-See also: [COLLECTIONS_PLAN.md](COLLECTIONS_PLAN.md) (design for the
+**Live production URL: https://custom-cms-lyart.vercel.app** (Vercel +
+Prisma Postgres, both free tier)
+
+See also: [../CLAUDE.md](../CLAUDE.md) (code conventions — read this
+before writing new code, so style/patterns stay consistent),
+[COLLECTIONS_PLAN.md](COLLECTIONS_PLAN.md) (design for the
 Payload-style Collections system), [SECURITY_REVIEW.md](SECURITY_REVIEW.md)
 (vulnerability findings), [RBAC_PLAN.md](RBAC_PLAN.md) (design for
 database-driven, admin-configurable roles/departments — replaces the
@@ -42,8 +47,9 @@ permissions to)
 | `bcryptjs`                     | Hashes passwords before storing them                                                                                                 |
 | `tsx`                          | Lets us run TypeScript seed scripts directly (`npm run db:seed`)                                                                     |
 
-Nothing else has been installed. No hosting, deployment, image upload, or
-email-sending packages yet — those come later depending on priorities.
+No image upload or email-sending packages yet — those come later
+depending on priorities. Hosting/deployment isn't a package but is done
+(see below): Vercel, with Prisma Postgres as the production database.
 
 ## 3. What's built so far
 
@@ -73,11 +79,13 @@ correctly at its public URL with real data from the database.
   - `Hero.tsx`, `CardGrid.tsx` — two example components
   - `registry.tsx` — maps a Component's database `key` to the real React component
   - `BlockRenderer.tsx` — takes a Page's Blocks and renders each one via the registry
-- `prisma/seed.ts` — creates one login per role (`admin@example.com` / `editor@example.com` / `viewer@example.com`, all password `changeme123`) and registers the two example Components, so there's something to click on/edit and every role is testable
+- `prisma/seed.ts` — creates one login per role (`admin@example.com` / `editor@example.com` / `viewer@example.com`, all sharing one password) and registers the two example Components, so there's something to click on/edit and every role is testable. Password comes from `SEED_USER_PASSWORD` in the environment (falls back to `changeme123` locally only, with a warning) — never hardcoded, so a real value is required before seeding anything shared/production.
 - `.env.example` — template of the environment variables needed (`DATABASE_URL`, `AUTH_SECRET`)
 - `.env` — your actual local values (gitignored, never committed). Currently points at a local Postgres database called `custom_cms` running on this machine.
 - `prisma/migrations/` — the migration that created all the tables, committed to git so anyone cloning the repo can run `prisma migrate deploy`/`dev` and get the same schema
 - `src/lib/api-response.ts` + `src/app/api/v1/{pages,posts}/route.ts` + `src/app/api/v1/{pages,posts}/[slug]/route.ts` — the read-only REST API (see §6). Consistent `{ data }`/`{ data, meta }`/`{ error }` envelope, offset pagination with a server-side `pageSize` cap of 100, published-only content. Verified end-to-end against real data: single-item found/not-found for both resources, empty list, populated list, and pagination actually slicing results correctly across pages.
+- **Deployed to production**: https://custom-cms-lyart.vercel.app — Vercel (app hosting, auto-deploys on push to `main`) + Prisma Postgres (production database, free tier). `package.json`'s `build` script runs `prisma generate && prisma migrate deploy && next build`, so schema migrations apply automatically on every deploy. Verified working end-to-end against the live site: the production REST API (`/api/v1/pages`) returns real data from the real production database with the correct response shape.
+- `CLAUDE.md` — code conventions (file layout, auth pattern, API conventions, verification standard, git conventions) read automatically at the start of work in this repo, so style stays consistent without having to re-derive it each time.
 
 ## 4. What's NOT done yet
 
@@ -85,9 +93,13 @@ correctly at its public URL with real data from the database.
 - Media has no upload flow (list only, no way to add a file)
 - Block content is entered as raw JSON in the admin — no real visual editor
 - No automated tests
-- No CI/CD (explicitly deferred until the app itself is further along)
+- RBAC v2 (database-driven roles), Collections system — designed, not built
+- Branch protection not configured — CI reports status but doesn't yet block a failing merge
+- No rate limiting (login or public API)
+- Production database has no seeded users yet (schema migrated, not seeded — password needs to be set deliberately, see §3)
 
-`npm run lint` and `npx tsc --noEmit` both pass clean as of this writing.
+`npm run format:check`, `npm run lint`, and `npm run typecheck` all pass
+clean as of this writing, and CI runs all three on every push/PR.
 
 ## 5. Roadmap & priorities
 
@@ -166,9 +178,16 @@ it's correct as far as it goes, just hardcoded to three fixed roles.
 7. Rate limiting on login and on public API endpoints
    ([SECURITY_REVIEW.md](SECURITY_REVIEW.md) finding #4)
 8. Automated tests
-9. Deployment target — **in progress**: Vercel account created, plan is
-   Vercel (app hosting) + Neon (Postgres), both free-tier. Not deployed
-   yet.
+9. ~~Deployment target~~ — **Done, 2026-09-15.** Live at
+   https://custom-cms-lyart.vercel.app (Vercel + Prisma Postgres, both
+   free tier, not Neon as originally planned — Vercel's own first-party
+   Prisma Postgres integration turned out to be the smoother path than
+   a separate Neon signup). See §7 gotchas — this took several real
+   fixes to get working (env var wiring, build script, deployment
+   protection). Still needed: seed the production database with real
+   users (schema is migrated, not seeded — see §3), and disable
+   Deployment Protection for non-canonical URLs if those need to be
+   public too (canonical production URL is already public).
 
 ## 6. REST API design (P1 item 1 above)
 
@@ -253,6 +272,10 @@ question, not a decision made yet.
 - **The local Postgres password was reset once**, on 2026-09-14, to get a working connection (nobody on this project had the original password). New password lives only in `.env` (gitignored).
 - **`npm ci` can fail in CI even when `npm install` works fine on your own machine.** We hit this: `package-lock.json` had incomplete entries for `@emnapi/runtime`/`@emnapi/core` — optional WASM-fallback dependencies of `sharp` with genuinely conflicting version requirements from different packages, which npm on Windows didn't fully resolve into the lockfile even after a clean reinstall. Fix was using `npm install` in CI instead of `npm ci` — slightly less strict, but sidesteps this class of cross-platform optional-dependency issue entirely. If `npm ci` ever fails in CI with "Missing: X from lock file" while `npm install` works locally, this is why.
 - **`tsc --noEmit` can pass locally but fail in CI on Next.js's generated types** (e.g. `Cannot find name 'LayoutProps'`). `tsconfig.json` includes `.next/types/**` — but there are _two separate_ generated-types locations: `.next/types/` (from `next build` or `next typegen`) and `.next/dev/types/` (from `next dev`, populated the first time you ever run the dev server on a machine). Once you've run `next dev` locally even once, `tsc` quietly succeeds using the dev-server copy, masking that `.next/types/` was never generated — which CI, having never run `next dev`, doesn't have. Fix: run `npx next typegen` (generates types without a full build) before type-checking in CI.
+- **`prisma migrate deploy` does not run `prisma generate` for you** — unlike `migrate dev`, which does. Our build script was `prisma migrate deploy && next build`, and it worked locally (because `node_modules/@prisma/client` was already generated from earlier local work) but failed on Vercel's genuinely fresh build with `Module '@prisma/client' has no exported member 'PrismaClient'` — the exact same "local leftover artifact masks a missing build step" trap as the `next typegen` gotcha above, just for a different generated artifact. Fix: `prisma generate && prisma migrate deploy && next build`.
+- **A Vercel storage integration's "Custom Prefix" field doesn't rename one variable — it prepends to several at once.** Connecting a database integration (e.g. Prisma Postgres) actually creates multiple env vars under the hood (a pooled URL, a direct URL, a provider-specific one — in our case suffixed `_POSTGRES_URL`, `_DATABASE_URL`, `_PRISMA_DATABASE_URL`). The "Custom Prefix" field prepends whatever you type (plus the visible trailing `_URL`) to _all_ of them, so typing "DATABASE" to try to get a clean `DATABASE_URL` instead produces `DATABASE_URL_POSTGRES_URL`, `DATABASE_URL_DATABASE_URL`, etc. — none of them literally `DATABASE_URL`. Easiest fix: leave the prefix empty when connecting (the default unprefixed name is often already what you want), or just manually create/edit a plain `DATABASE_URL` variable with the real value copied from one of the generated ones afterward.
+- **Some Vercel env vars marked "Secret" genuinely cannot be viewed or copied from the dashboard once saved** — no eye icon, and even "Copy to Clipboard" can show as locked/disabled in the `...` menu depending on how the variable was created (e.g. by an integration). If you need the actual value and it's locked in Vercel, check the integration/provider's own dashboard instead (e.g. Prisma Postgres's own resource page has a "Quickstart" panel showing real connection strings in plain, copyable text) — don't assume Vercel's UI is the only source of truth for a value you set there.
+- **Vercel's Deployment Protection blocks unauthenticated access to _every_ URL for a project by default, including what looks like it should be the public production site** — requests get a `302` to `vercel.com/sso-api`. This can make you think a deployment is broken when it's actually just protected. Check **Settings → Deployment Protection** and disable it for Production if the site is meant to be public. Separately: **the actual canonical production domain is whatever's listed under a deployment's "Domains" section — never guess it from the project name.** `<project-name>.vercel.app` is a _global_ namespace across all Vercel users, not scoped to your account — if that exact name is already taken by someone else, Vercel silently assigns a different one (ours ended up `custom-cms-lyart.vercel.app`, not `custom-cms.vercel.app`), and querying the guessed-wrong one will hit a completely unrelated stranger's app with no error indicating the mismatch.
 
 ---
 
