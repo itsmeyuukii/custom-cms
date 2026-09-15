@@ -2,11 +2,11 @@
 
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
-import { requireRole, WRITE_ROLES } from "@/lib/rbac";
+import { requirePermission } from "@/lib/rbac";
 import { prisma } from "@/lib/prisma";
 
 export async function createPage(formData: FormData) {
-  const session = await requireRole(WRITE_ROLES);
+  const session = await requirePermission("pages:create");
 
   const title = String(formData.get("title") ?? "").trim();
   const slug = String(formData.get("slug") ?? "").trim();
@@ -26,7 +26,7 @@ export async function createPage(formData: FormData) {
 }
 
 export async function addBlock(pageId: string, formData: FormData) {
-  await requireRole(WRITE_ROLES);
+  await requirePermission("pages:edit");
 
   const componentId = String(formData.get("componentId") ?? "");
   const dataRaw = String(formData.get("data") ?? "{}");
@@ -59,7 +59,12 @@ export async function setPageStatus(
   pageId: string,
   status: "DRAFT" | "PUBLISHED" | "ARCHIVED",
 ) {
-  await requireRole(WRITE_ROLES);
+  // Gated on pages:edit rather than pages:publish so this matches today's
+  // behavior exactly (WRITE_ROLES let an editor set any status) — the
+  // seeded Editor role doesn't hold pages:publish yet, and giving this
+  // one action a stricter check than the rest of the write surface would
+  // be a silent capability regression, not a mechanical migration.
+  await requirePermission("pages:edit");
 
   await prisma.page.update({
     where: { id: pageId },
