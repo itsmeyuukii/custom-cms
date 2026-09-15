@@ -32,7 +32,11 @@ exact commands and the gotchas hit getting each piece working.
 - `docs/` — all planning/reference docs. Every substantial feature gets
   a design doc here _before_ being built (see `COLLECTIONS_PLAN.md`,
   `RBAC_PLAN.md` as examples) — write the plan, get it reviewed/agreed,
-  then implement.
+  then implement. The `create-plan` skill
+  (`.claude/skills/create-plan/`) encodes exactly when this applies
+  (and when it doesn't — small/patterned changes skip it) and the
+  doc's expected shape; it's meant to trigger proactively based on
+  task size, not only when explicitly invoked.
 
 ## Code conventions
 
@@ -123,3 +127,19 @@ project's history has repeated examples (`prisma/test-page.ts`,
   just in a commit message — commit messages explain _what changed_,
   `docs/PROJECT_PLAN.md`'s "Known gotchas" section is for _lessons that
   would otherwise get relearned the hard way_.
+- **Never push directly to `main`.** As of 2026-09-15, all work lands
+  through a branch + pull request, even for small or solo changes —
+  `main` only ever receives merges. This is what makes CI (which runs
+  on every PR, see `.github/workflows/ci.yml`) actually mean something:
+  a check that runs but nothing depends on it isn't a gate.
+  - Branch naming matches the commit prefixes above:
+    `feat/short-description`, `fix/short-description`,
+    `docs/short-description`, `chore/short-description`.
+  - Workflow: create the branch, commit as normal, push the branch
+    (`git push -u origin <branch>`), open a PR (`gh pr create`), let CI
+    run on it, then merge. The `/create-pr` skill
+    (`.claude/skills/create-pr/`) automates the branch+push+PR part of
+    this.
+  - Once GitHub's branch protection is configured to require the CI
+    check (still open — see `docs/PROJECT_PLAN.md` §5 P3), this
+    becomes enforced, not just a convention to remember.
