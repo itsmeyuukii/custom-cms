@@ -189,9 +189,30 @@ it's correct as far as it goes, just hardcoded to three fixed roles.
      `requirePermission` genuinely threw `Forbidden: insufficient
 permissions` server-side (not just a hidden button), confirmed via
      the 500 response's error digest. Test page cleaned up after.
-     **Not done yet:** phases 3–6 (see RBAC_PLAN.md §8) — `/admin/roles`
-     and `/admin/users` UI, role creation from the admin UI, and
-     dropping `LegacyRole`.
+   - **Phase 3 (`/admin/roles` — view/edit existing roles), done
+     2026-09-16**: `/admin/roles` (list: name, description, permission
+     count, user count) and `/admin/roles/[id]` (edit name/description,
+     checkbox grid of every `Permission` grouped by `group`) — both
+     gated on `roles:manage` itself, and the sidebar's "Roles" link
+     only renders for users who hold it. No role _creation_ yet, per
+     the plan's phase 3 scope — proving the query shape on existing
+     seeded roles first. Also resolved RBAC_PLAN.md's other flagged
+     open question (lockout protection): `updateRole` now blocks a save
+     that would leave nobody in the system holding `roles:manage`,
+     checked before the transaction runs. Verified against the real
+     app: as admin, confirmed the roles list shows the correct
+     permission/user counts (12/1, 5/1, 0/1), then drove the real
+     `updateRole` server action directly (multipart POST with the
+     bound action's actual `$ACTION_1:0`/`$ACTION_1:1` fields) to add
+     `pages:publish` to Editor — the list correctly showed 6
+     permissions afterward — then reverted it back to 5. Separately
+     attempted to strip `roles:manage` from Admin (the only holder) and
+     confirmed the request came back `500` with the lockout guard's
+     error message, and that Admin's permission count stayed at 12
+     (no partial write). Also confirmed editor/viewer get redirected
+     away from `/admin/roles` and don't see the nav link.
+     **Not done yet:** phases 4–6 (see RBAC_PLAN.md §8) — `/admin/users`
+     UI, role creation from the admin UI, and dropping `LegacyRole`.
 
 ### P2 — depend on RBAC v2 being done
 

@@ -250,6 +250,10 @@ access-control idioms.
   This plan assumes type-level only — per-item scoping is a much bigger
   feature (closer to a full ACL system) and nothing today suggests it's
   needed yet.
-- Should there be a hard floor preventing the last `roles:manage` holder
-  from removing their own access (lockout protection)? Worth deciding
-  before `/admin/roles` ships, not after someone locks themselves out.
+- ~~Should there be a hard floor preventing the last `roles:manage`
+  holder from removing their own access (lockout protection)?~~
+  **Resolved, 2026-09-16**: yes. `updateRole` (`src/app/admin/roles/actions.ts`)
+  blocks any save that would leave nobody in the system holding
+  `roles:manage`, checked before the transaction runs — verified by
+  attempting to strip it from Admin (the only holder) and confirming
+  both the block and that no partial write occurred.
