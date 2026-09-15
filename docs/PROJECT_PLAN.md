@@ -12,7 +12,9 @@ Prisma Postgres, both free tier)
 
 See also: [../CLAUDE.md](../CLAUDE.md) (code conventions — read this
 before writing new code, so style/patterns stay consistent),
-[COLLECTIONS_PLAN.md](COLLECTIONS_PLAN.md) (design for the
+[SEEDING.md](SEEDING.md) (how to run `prisma/seed.ts`, locally and
+against a remote database, without risking your local dev pointing at
+production), [COLLECTIONS_PLAN.md](COLLECTIONS_PLAN.md) (design for the
 Payload-style Collections system), [SECURITY_REVIEW.md](SECURITY_REVIEW.md)
 (vulnerability findings), [RBAC_PLAN.md](RBAC_PLAN.md) (design for
 database-driven, admin-configurable roles/departments — replaces the
