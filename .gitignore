@@ -37,8 +37,9 @@ yarn-error.log*
 # vercel
 .vercel
 
-# claude code local task state
-.claude/
+# claude code local task state (but keep .claude/skills/ - shared, tracked)
+.claude/*
+!.claude/skills/
 
 # typescript
 *.tsbuildinfo
