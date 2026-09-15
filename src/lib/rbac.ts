@@ -1,13 +1,13 @@
-import type { Role } from "@prisma/client";
+import type { LegacyRole } from "@prisma/client";
 import { auth } from "@/lib/auth";
 
 /** Roles allowed to create/edit content (everything short of user management). */
-export const WRITE_ROLES: Role[] = ["ADMIN", "EDITOR"];
+export const WRITE_ROLES: LegacyRole[] = ["ADMIN", "EDITOR"];
 
 /** Plain boolean check, for conditionally rendering UI. */
 export function hasRole(
-  role: Role | undefined | null,
-  allowed: Role[],
+  role: LegacyRole | undefined | null,
+  allowed: LegacyRole[],
 ): boolean {
   return !!role && allowed.includes(role);
 }
@@ -18,7 +18,7 @@ export function hasRole(
  * (see docs/COLLECTIONS_PLAN.md) so both systems share one permission
  * idiom instead of two.
  */
-export async function requireRole(allowed: Role[]) {
+export async function requireRole(allowed: LegacyRole[]) {
   const session = await auth();
 
   if (!session?.user?.id || !hasRole(session.user.role, allowed)) {
