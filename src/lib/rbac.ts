@@ -1,27 +1,48 @@
-import type { LegacyRole } from "@prisma/client";
 import { auth } from "@/lib/auth";
+import { prisma } from "@/lib/prisma";
 
-/** Roles allowed to create/edit content (everything short of user management). */
-export const WRITE_ROLES: LegacyRole[] = ["ADMIN", "EDITOR"];
+/**
+ * Whether any of the given roles currently grants `key`, looked up fresh
+ * from the database every call. See docs/RBAC_PLAN.md §3: unlike role
+ * assignment (frozen in the session JWT until re-login), a role's
+ * permissions are never cached, so revoking one takes effect immediately
+ * for everyone who holds that role.
+ */
+async function roleSlugsHavePermission(
+  roleSlugs: string[],
+  key: string,
+): Promise<boolean> {
+  if (roleSlugs.length === 0) return false;
+
+  const allowed = await prisma.rolePermission.findFirst({
+    where: {
+      permission: { key },
+      role: { slug: { in: roleSlugs } },
+    },
+  });
+
+  return !!allowed;
+}
 
 /** Plain boolean check, for conditionally rendering UI. */
-export function hasRole(
-  role: LegacyRole | undefined | null,
-  allowed: LegacyRole[],
-): boolean {
-  return !!role && allowed.includes(role);
+export async function hasPermission(
+  roleSlugs: string[] | undefined,
+  key: string,
+): Promise<boolean> {
+  return roleSlugsHavePermission(roleSlugs ?? [], key);
 }
 
 /**
- * Throws if there's no session or the session's role isn't in `allowed`.
- * Mirrors the `access: Role[]` shape planned for Collections
- * (see docs/COLLECTIONS_PLAN.md) so both systems share one permission
- * idiom instead of two.
+ * Throws if there's no session or the session's roles don't grant `key`.
+ * Replaces requireRole — same call-site shape (docs/RBAC_PLAN.md §4).
  */
-export async function requireRole(allowed: LegacyRole[]) {
+export async function requirePermission(key: string) {
   const session = await auth();
 
-  if (!session?.user?.id || !hasRole(session.user.role, allowed)) {
+  if (
+    !session?.user?.id ||
+    !(await roleSlugsHavePermission(session.user.roleSlugs, key))
+  ) {
     throw new Error("Forbidden: insufficient permissions");
   }
 

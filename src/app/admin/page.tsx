@@ -9,7 +9,10 @@ export default async function AdminDashboard() {
         Welcome{session?.user?.name ? `, ${session.user.name}` : ""}
       </h1>
       <p className="mt-2 text-gray-600">
-        Role: {session?.user?.role ?? "unknown"}
+        Roles:{" "}
+        {session?.user?.roleSlugs?.length
+          ? session.user.roleSlugs.join(", ")
+          : "none"}
       </p>
     </div>
   );

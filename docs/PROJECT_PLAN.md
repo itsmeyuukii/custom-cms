@@ -66,8 +66,8 @@ correctly at its public URL with real data from the database.
   - `Component` — a reusable block _definition_ (e.g. "Hero", "Card Grid")
   - `Block` — one _instance_ of a Component placed on a specific Page, with its own content
   - `Media` — uploaded file records (no upload UI yet, just the table)
-- `src/lib/auth.ts` — NextAuth config (email/password login, JWT sessions, role attached to session)
-- `src/lib/rbac.ts` — role-based access control (`requireRole`/`hasRole`), enforced on every Pages write action and reflected in the admin UI (VIEWER is read-only; ADMIN/EDITOR can write)
+- `src/lib/auth.ts` — NextAuth config (email/password login, JWT sessions, `roleSlugs` attached to session)
+- `src/lib/rbac.ts` — RBAC v2 (`requirePermission`/`hasPermission`, see [RBAC_PLAN.md](RBAC_PLAN.md)), enforced on every Pages write action and reflected in the admin UI (Viewer is read-only; Admin/Editor can write, per the seeded system roles' permissions)
 - `src/lib/prisma.ts` — shared database client (Prisma 7 + the `@prisma/adapter-pg` driver adapter)
 - `src/proxy.ts` — blocks `/admin/*` routes unless logged in (this is Next.js 16's renamed replacement for `middleware.ts` — using the old name/Edge runtime broke Prisma's `pg` driver, see commit history)
 - `src/app/login` — a working login form
@@ -138,28 +138,60 @@ it's correct as far as it goes, just hardcoded to three fixed roles.
    correctly across pages). Directly satisfies the original "public API
    for a separate frontend" goal.
 2. **RBAC v2 — database-driven roles & permissions** (full plan in
-   [RBAC_PLAN.md](RBAC_PLAN.md)). **Phase 1 (data model) done,
-   2026-09-16**: `Permission`/`Role`/`RolePermission`/`UserRole` tables
-   added additively — the old `Role` enum was renamed to `LegacyRole`
-   (not dropped) so it could coexist with the new `Role` table without a
-   name clash; existing `User.role` data was preserved via an `ALTER TYPE
-... RENAME` in the migration SQL rather than the drop/recreate Prisma
-   would have generated automatically, which would have nulled every
-   user's role. Seeded the 12 permission keys from RBAC_PLAN.md §2 and
-   three system roles (Admin/Editor/Viewer) matching today's behavior
-   exactly, and backfilled a `UserRole` row for every existing user from
-   their current enum value. Verified: seed is idempotent (ran twice,
-   no duplicate/errored rows), `format:check`/`lint`/`typecheck` all
-   pass, and the app still boots and serves `/api/v1/pages` correctly —
-   no authorization code touched yet, so no behavior change expected or
-   observed. **Not done yet:** phases 2–6 (see RBAC_PLAN.md §8) —
-   `requirePermission`/`hasPermission`, migrating call sites, and the
-   `/admin/roles`+`/admin/users` UI.
-   but it's the highest-leverage remaining piece: it's what Media upload,
-   Collections' access config, and any future API write endpoints all
-   need, and building any of those against the current `WRITE_ROLES`
-   enum first just means redoing their authorization wiring once this
-   lands. Better to absorb that cost once, here, than three times later.
+   [RBAC_PLAN.md](RBAC_PLAN.md)). It's the highest-leverage remaining
+   piece: it's what Media upload, Collections' access config, and any
+   future API write endpoints all need, and building any of those
+   against the current `WRITE_ROLES` enum first just means redoing their
+   authorization wiring once this lands. Better to absorb that cost
+   once, here, than three times later.
+
+   - **Phase 1 (data model), done 2026-09-16**: `Permission`/`Role`/
+     `RolePermission`/`UserRole` tables added additively — the old
+     `Role` enum was renamed to `LegacyRole` (not dropped) so it could
+     coexist with the new `Role` table without a name clash; existing
+     `User.role` data was preserved via an `ALTER TYPE ... RENAME` in
+     the migration SQL rather than the drop/recreate Prisma would have
+     generated automatically, which would have nulled every user's
+     role. Seeded the 12 permission keys from RBAC_PLAN.md §2 and three
+     system roles (Admin/Editor/Viewer) matching today's behavior
+     exactly, and backfilled a `UserRole` row for every existing user.
+     Verified: seed is idempotent, `format:check`/`lint`/`typecheck`
+     all pass, app boots and `/api/v1/pages` still works — no
+     authorization code touched yet, so no behavior change expected.
+   - **Phase 2 (`requirePermission`/`hasPermission`, call-site
+     migration), done 2026-09-16**: `src/lib/rbac.ts` rewritten —
+     `hasRole`/`requireRole`/`WRITE_ROLES` replaced by
+     `hasPermission(roleSlugs, key)`/`requirePermission(key)`, both
+     querying `RolePermission` fresh on every call (no permission
+     caching, per RBAC_PLAN.md §3). `session.user.role` (enum) replaced
+     with `session.user.roleSlugs: string[]`, populated in
+     `src/lib/auth.ts`'s `authorize()`/`jwt`/`session` callbacks from
+     each user's live `UserRole` rows at login time — role
+     _assignment_ is frozen until re-login by design, but a role's
+     _permissions_ are always looked up fresh, so revoking one takes
+     effect immediately for everyone holding that role. All call sites
+     in `actions.ts` and the admin Pages UI migrated to permission keys
+     (`pages:create`, `pages:edit`). One real design gap surfaced and
+     was resolved with the user: RBAC_PLAN.md's taxonomy suggested
+     gating `setPageStatus` on `pages:publish`, but the seeded Editor
+     role doesn't hold that permission — doing so would have silently
+     regressed today's behavior (editors can currently publish).
+     Resolved by gating all status transitions on `pages:edit` instead,
+     preserving current behavior exactly; `pages:publish` stays defined
+     but unused until there's a real distinction to enforce. Verified
+     against the real app, not just types: logged in as all three
+     seeded users via the actual credentials flow, confirmed
+     `roleSlugs` and permission-gated UI matched expectations for each
+     (dashboard, pages list, `/admin/pages/new` access), then drove the
+     real `createPage` server action directly as editor (multipart
+     POST with the page's actual `$ACTION_ID_...` field) — a real page
+     was created and redirected to correctly — and as viewer, where
+     `requirePermission` genuinely threw `Forbidden: insufficient
+permissions` server-side (not just a hidden button), confirmed via
+     the 500 response's error digest. Test page cleaned up after.
+     **Not done yet:** phases 3–6 (see RBAC_PLAN.md §8) — `/admin/roles`
+     and `/admin/users` UI, role creation from the admin UI, and
+     dropping `LegacyRole`.
 
 ### P2 — depend on RBAC v2 being done
 

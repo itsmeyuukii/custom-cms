@@ -2,7 +2,7 @@ import { notFound } from "next/navigation";
 import Link from "next/link";
 import { prisma } from "@/lib/prisma";
 import { auth } from "@/lib/auth";
-import { hasRole, WRITE_ROLES } from "@/lib/rbac";
+import { hasPermission } from "@/lib/rbac";
 import { addBlock, setPageStatus } from "../actions";
 
 export default async function EditPage({
@@ -25,7 +25,7 @@ export default async function EditPage({
 
   if (!page) notFound();
 
-  const canWrite = hasRole(session?.user?.role, WRITE_ROLES);
+  const canWrite = await hasPermission(session?.user?.roleSlugs, "pages:edit");
 
   const addBlockToPage = addBlock.bind(null, page.id);
 

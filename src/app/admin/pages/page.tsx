@@ -1,14 +1,17 @@
 import Link from "next/link";
 import { prisma } from "@/lib/prisma";
 import { auth } from "@/lib/auth";
-import { hasRole, WRITE_ROLES } from "@/lib/rbac";
+import { hasPermission } from "@/lib/rbac";
 
 export default async function AdminPagesList() {
   const [pages, session] = await Promise.all([
     prisma.page.findMany({ orderBy: { updatedAt: "desc" } }),
     auth(),
   ]);
-  const canWrite = hasRole(session?.user?.role, WRITE_ROLES);
+  const canWrite = await hasPermission(
+    session?.user?.roleSlugs,
+    "pages:create",
+  );
 
   return (
     <div>
