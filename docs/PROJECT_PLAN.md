@@ -138,7 +138,23 @@ it's correct as far as it goes, just hardcoded to three fixed roles.
    correctly across pages). Directly satisfies the original "public API
    for a separate frontend" goal.
 2. **RBAC v2 — database-driven roles & permissions** (full plan in
-   [RBAC_PLAN.md](RBAC_PLAN.md)). Bigger than item 1,
+   [RBAC_PLAN.md](RBAC_PLAN.md)). **Phase 1 (data model) done,
+   2026-09-16**: `Permission`/`Role`/`RolePermission`/`UserRole` tables
+   added additively — the old `Role` enum was renamed to `LegacyRole`
+   (not dropped) so it could coexist with the new `Role` table without a
+   name clash; existing `User.role` data was preserved via an `ALTER TYPE
+... RENAME` in the migration SQL rather than the drop/recreate Prisma
+   would have generated automatically, which would have nulled every
+   user's role. Seeded the 12 permission keys from RBAC_PLAN.md §2 and
+   three system roles (Admin/Editor/Viewer) matching today's behavior
+   exactly, and backfilled a `UserRole` row for every existing user from
+   their current enum value. Verified: seed is idempotent (ran twice,
+   no duplicate/errored rows), `format:check`/`lint`/`typecheck` all
+   pass, and the app still boots and serves `/api/v1/pages` correctly —
+   no authorization code touched yet, so no behavior change expected or
+   observed. **Not done yet:** phases 2–6 (see RBAC_PLAN.md §8) —
+   `requirePermission`/`hasPermission`, migrating call sites, and the
+   `/admin/roles`+`/admin/users` UI.
    but it's the highest-leverage remaining piece: it's what Media upload,
    Collections' access config, and any future API write endpoints all
    need, and building any of those against the current `WRITE_ROLES`

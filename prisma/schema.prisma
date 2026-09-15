@@ -6,29 +6,83 @@ datasource db {
   provider = "postgresql"
 }
 
-enum Role {
+// Renamed from `Role` so it can coexist with the new RBAC v2 `Role` model
+// below during the additive migration (docs/RBAC_PLAN.md) — dropped
+// entirely once every call site has migrated to `requirePermission`.
+enum LegacyRole {
   ADMIN
   EDITOR
   VIEWER
 }
 
 model User {
-  id            String    @id @default(cuid())
+  id            String     @id @default(cuid())
   name          String?
-  email         String    @unique
+  email         String     @unique
   emailVerified DateTime?
   image         String?
   passwordHash  String?
-  role          Role      @default(VIEWER)
+  role          LegacyRole @default(VIEWER)
 
   accounts Account[]
   sessions Session[]
   pages    Page[]
   posts    Post[]
   media    Media[]
+  roles    UserRole[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+}
+
+// RBAC v2 (docs/RBAC_PLAN.md) — database-driven roles & permissions.
+// Additive alongside the legacy `Role` enum / `User.role` field for now;
+// those are dropped once every call site has migrated (plan §6 step 5).
+
+// Fixed, developer-defined capability (`pages:publish`, `media:upload`, ...).
+// New permissions ship in code, not created from the admin UI.
+model Permission {
+  id    String @id @default(cuid())
+  key   String @unique
+  label String
+  group String
+
+  roles RolePermission[]
+}
+
+// Admin-creatable, named bundle of permissions ("Marketing", "Admin").
+model Role {
+  id          String  @id @default(cuid())
+  name        String  @unique
+  slug        String  @unique
+  description String?
+  isSystem    Boolean @default(false)
+
+  permissions RolePermission[]
+  users       UserRole[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model RolePermission {
+  roleId       String
+  permissionId String
+
+  role       Role       @relation(fields: [roleId], references: [id], onDelete: Cascade)
+  permission Permission @relation(fields: [permissionId], references: [id], onDelete: Cascade)
+
+  @@id([roleId, permissionId])
+}
+
+model UserRole {
+  userId String
+  roleId String
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  role Role @relation(fields: [roleId], references: [id], onDelete: Cascade)
+
+  @@id([userId, roleId])
 }
 
 model Account {
@@ -76,12 +130,12 @@ enum ContentStatus {
 // A Page is composed of an ordered list of Blocks, each referencing a
 // reusable Component with a JSON payload of props/content for that instance.
 model Page {
-  id          String        @id @default(cuid())
-  title       String
-  slug        String        @unique
-  status      ContentStatus @default(DRAFT)
-  seoTitle    String?
-  seoDesc     String?
+  id       String        @id @default(cuid())
+  title    String
+  slug     String        @unique
+  status   ContentStatus @default(DRAFT)
+  seoTitle String?
+  seoDesc  String?
 
   blocks Block[]
 
@@ -127,9 +181,9 @@ model Component {
 // One placed instance of a Component on a Page, with its own prop data
 // and position within the page.
 model Block {
-  id          String @id @default(cuid())
-  order       Int
-  data        Json
+  id    String @id @default(cuid())
+  order Int
+  data  Json
 
   pageId String
   page   Page   @relation(fields: [pageId], references: [id], onDelete: Cascade)
@@ -144,7 +198,7 @@ model Block {
 }
 
 model Media {
-  id       String @id @default(cuid())
+  id       String  @id @default(cuid())
   filename String
   url      String
   mimeType String
