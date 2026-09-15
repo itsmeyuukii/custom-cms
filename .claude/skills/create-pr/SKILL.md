@@ -55,21 +55,57 @@ CI check in `.github/workflows/ci.yml` actually gate anything).
    git push -u origin <branch-name>
    ```
 
-6. **Open the PR** with `gh pr create`. Write a real title and body
-   (Summary + Test plan sections, matching this project's established
-   PR style) — don't leave it to `gh`'s auto-fill unless the change is
-   genuinely trivial.
+6. **Open the PR** with `gh pr create`. Write a real title and body —
+   don't leave it to `gh`'s auto-fill. Use this exact shape:
 
    ```bash
    gh pr create --title "<short title>" --body "$(cat <<'EOF'
    ## Summary
    - <what changed and why, 1-3 bullets>
 
+   ## Scope
+   **<no-op|low|medium|high>** — <one line: why this rating>
+
    ## Test plan
-   - [ ] <how this was/should be verified>
+   - [x] <a specific check actually performed, or [ ] if still needed>
+   - [x] <another one — be concrete: what command, what real data, what result>
    EOF
    )"
    ```
+
+   **Scope** — rate the change itself, not the diff size. A 200-line
+   docs change is `no-op`; a 3-line change to `src/lib/rbac.ts` is
+   `high`. Pick the _highest_ tier that applies if a PR mixes concerns
+   (which is itself a reason to prefer smaller, single-concern PRs):
+
+   - **no-op** — no runtime behavior changes at all: docs, comments,
+     `.claude/`/CI config that doesn't affect what ships, formatting-only.
+   - **low** — small, isolated, follows an already-established pattern.
+     A new route/page/component that mirrors an existing one, a copy
+     change, a dependency patch-version bump, a new non-required field.
+   - **medium** — touches shared or structural code, but in a
+     contained, well-understood way: a new Prisma model + migration
+     that only adds (never alters/drops), a new admin CRUD flow, a
+     refactor confined to one module, CI/build script changes.
+   - **high** — touches auth/authorization (`rbac.ts`, `auth.ts`,
+     `proxy.ts`), any migration that alters or drops existing
+     columns/tables, anything security-sensitive
+     (`SECURITY_REVIEW.md`-adjacent), or changes to the production
+     build/deploy path. Also: anything `create-plan` should have run
+     for first — if this PR represents a "big enough" change per that
+     skill's criteria and no design doc exists yet, that's a signal to
+     go run `create-plan` before this PR, not just to label it `high`
+     and proceed.
+
+   **Test plan** — every line must name a _specific, real_ check, per
+   `CLAUDE.md`'s Verification standard: an actual command run, real
+   (temporary) data exercised, an actual response observed — not
+   "should work" or a generic "tested locally." For anything touching
+   the database or auth, type-checking passing is not sufficient
+   evidence on its own; say what was actually queried/logged
+   in/hit and what came back. If something genuinely wasn't verified
+   yet, say so plainly with an unchecked `[ ]` rather than implying it
+   was.
 
 7. **Report the PR URL back** — `gh pr create` prints it; surface it
    clearly rather than leaving it buried in tool output.
