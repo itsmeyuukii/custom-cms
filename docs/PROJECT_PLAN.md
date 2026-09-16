@@ -230,8 +230,22 @@ permissions` server-side (not just a hidden button), confirmed via
      lockout guard's error message and no partial write. Also confirmed
      editor gets redirected away from `/admin/users` and doesn't see
      the nav link.
-     **Not done yet:** phases 5–6 (see RBAC_PLAN.md §8) — role creation
-     from the admin UI, and dropping `LegacyRole`.
+   - **Phase 5 (role _creation_ from the admin UI), done 2026-09-16**:
+     `/admin/roles/new` (name/slug/description form, same shape as
+     `/admin/pages/new`) posts to `createRole`, which creates the role
+     with zero permissions and redirects straight to `/admin/roles/[id]`
+     to set them — matching how a new page starts with no blocks. No
+     lockout concern here (a brand-new role holds no users yet, so it
+     can't be anyone's last permission). Verified against the real app:
+     as admin, drove the real `createRole` action directly (multipart
+     POST with `$ACTION_ID_...`) to create a "Marketing" role — it
+     showed up on the roles list and its edit page with 0 permissions
+     checked — then attempted a second create with the same slug and
+     confirmed it came back `500` on the `Role_slug_key` unique
+     constraint (no orphan row created). Also confirmed editor gets
+     redirected away from `/admin/roles/new`. Test role deleted after.
+     **Not done yet:** phase 6 (see RBAC_PLAN.md §8) — dropping
+     `LegacyRole`.
 
 ### P2 — depend on RBAC v2 being done
 
