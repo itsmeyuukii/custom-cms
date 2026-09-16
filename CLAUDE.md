@@ -1,4 +1,4 @@
-@AGENTS.md
+@apps/cms/AGENTS.md
 
 # Custom CMS — Project Conventions
 
@@ -14,7 +14,19 @@ not the old `url` field) + PostgreSQL + NextAuth v5. See
 `docs/INSTALLATION.md` if reproducing this setup elsewhere — it has
 exact commands and the gotchas hit getting each piece working.
 
-## File layout conventions
+## Monorepo layout
+
+This is a monorepo (see `docs/MONOREPO_PLAN.md`). `apps/cms/` is the
+CMS itself — everything below in this file (`src/`, `prisma/`, etc.) is
+relative to `apps/cms/`, not the repo root, unless stated otherwise.
+`docs/`, `.github/workflows/`, `.claude/skills/`, and this file stay at
+the repo root as monorepo-wide concerns. Root `package.json` only holds
+workspace/Turborepo config — app dependencies and scripts live in each
+app's own `package.json`. Root-level `npm run dev`/`build`/`lint`/
+`typecheck` fan out to every app via Turborepo (`turbo.json`); run
+inside `apps/cms/` directly to work on just that app.
+
+## File layout conventions (within `apps/cms/`)
 
 - `src/app/` — routes (App Router). `page.tsx` for pages, `route.ts`
   for API handlers, `proxy.ts` at `src/` root for route-gating
