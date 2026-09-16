@@ -177,9 +177,15 @@ role or hand out `roles:manage` to anyone else):
 - `/admin/roles/[id]` — edit name/description, checkbox grid of every
   `Permission` grouped by `group`, save. `isSystem` roles show the same
   UI but block deletion.
-- `/admin/users` — list users with their current roles; assign/remove
-  roles per user (doesn't exist as an admin page at all today — currently
-  the only user-facing account is whoever's seeded)
+- `/admin/users` — list users (name, email, current roles) gated on
+  `users:manage`, same `hasPermission` + redirect pattern as
+  `/admin/roles`; no pagination for now, matching that page's
+  precedent. `/admin/users/[id]` — checkbox grid of every `Role`
+  (instead of every `Permission`, as the roles page does), posts to an
+  `updateUserRoles(userId, formData)` Server Action. Doesn't exist as
+  an admin page at all today — currently the only user-facing account
+  is whoever's seeded. No user _creation_ here either — same
+  reasoning as roles: prove assignment on existing users first.
 
 ## 6. Migration plan from the current enum-based system
 
@@ -257,3 +263,18 @@ access-control idioms.
   `roles:manage`, checked before the transaction runs — verified by
   attempting to strip it from Admin (the only holder) and confirming
   both the block and that no partial write occurred.
+- ~~Phase 4 (`/admin/users`) creates a second way to hit the same
+  lockout, from the opposite direction: editing a _user's_ role
+  assignments instead of a _role's_ permissions. Should that guard
+  reach only `users:manage` (this page's own gate), or also
+  `roles:manage` (the other admin page's gate, which has no way to
+  fix a `users:manage` lockout without going through `/admin/users`
+  itself)?~~ **Resolved, 2026-09-16**: guard both. `updateUserRoles`
+  (`src/app/admin/users/actions.ts`) blocks any save that would leave
+  nobody in the system holding `users:manage` _or_ nobody holding
+  `roles:manage` — via a permission-key-parameterized helper (count
+  other users who'd still hold the permission through some other role;
+  if zero, and the new role set for this user doesn't grant it either,
+  block). Verified by attempting to strip Admin's only role (the sole
+  holder of both permissions) and confirming both the block and that
+  no partial write occurred.

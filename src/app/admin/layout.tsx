@@ -13,6 +13,10 @@ export default async function AdminLayout({
     session?.user?.roleSlugs,
     "roles:manage",
   );
+  const canManageUsers = await hasPermission(
+    session?.user?.roleSlugs,
+    "users:manage",
+  );
 
   return (
     <div className="flex min-h-screen">
@@ -24,6 +28,7 @@ export default async function AdminLayout({
           <Link href="/admin/posts">Posts</Link>
           <Link href="/admin/media">Media</Link>
           {canManageRoles && <Link href="/admin/roles">Roles</Link>}
+          {canManageUsers && <Link href="/admin/users">Users</Link>}
         </nav>
       </aside>
       <main className="flex-1 p-6">{children}</main>
