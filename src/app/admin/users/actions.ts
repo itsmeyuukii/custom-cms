@@ -26,7 +26,9 @@ async function wouldOrphanPermission(
     where: {
       id: { not: userId },
       roles: {
-        some: { role: { permissions: { some: { permissionId: permission.id } } } },
+        some: {
+          role: { permissions: { some: { permissionId: permission.id } } },
+        },
       },
     },
   });

@@ -36,7 +36,10 @@ export default async function AdminUsersList() {
           {users.map((user) => (
             <tr key={user.id} className="border-b border-gray-100">
               <td className="py-2">
-                <Link href={`/admin/users/${user.id}`} className="hover:underline">
+                <Link
+                  href={`/admin/users/${user.id}`}
+                  className="hover:underline"
+                >
                   {user.name ?? "—"}
                 </Link>
               </td>

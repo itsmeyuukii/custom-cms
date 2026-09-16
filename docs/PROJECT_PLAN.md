@@ -217,7 +217,7 @@ permissions` server-side (not just a hidden button), confirmed via
      `updateUserRoles`) — both gated on `users:manage`, sidebar link
      included. Also resolved the follow-on lockout question RBAC_PLAN.md
      flagged when this phase was scoped: `updateUserRoles` blocks a
-     save that would leave nobody holding `users:manage` *or* nobody
+     save that would leave nobody holding `users:manage` _or_ nobody
      holding `roles:manage` (not just the former — a `roles:manage`
      lockout has no recovery path through this page either). Verified
      against the real app: as admin, listed all three seeded users with

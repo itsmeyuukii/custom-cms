@@ -264,14 +264,14 @@ access-control idioms.
   attempting to strip it from Admin (the only holder) and confirming
   both the block and that no partial write occurred.
 - ~~Phase 4 (`/admin/users`) creates a second way to hit the same
-  lockout, from the opposite direction: editing a *user's* role
-  assignments instead of a *role's* permissions. Should that guard
+  lockout, from the opposite direction: editing a _user's_ role
+  assignments instead of a _role's_ permissions. Should that guard
   reach only `users:manage` (this page's own gate), or also
   `roles:manage` (the other admin page's gate, which has no way to
   fix a `users:manage` lockout without going through `/admin/users`
   itself)?~~ **Resolved, 2026-09-16**: guard both. `updateUserRoles`
   (`src/app/admin/users/actions.ts`) blocks any save that would leave
-  nobody in the system holding `users:manage` *or* nobody holding
+  nobody in the system holding `users:manage` _or_ nobody holding
   `roles:manage` — via a permission-key-parameterized helper (count
   other users who'd still hold the permission through some other role;
   if zero, and the new role set for this user doesn't grant it either,
