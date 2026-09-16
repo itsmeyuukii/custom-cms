@@ -1,0 +1,17 @@
+# Force LF line endings for all text files, regardless of each
+# contributor's local core.autocrlf setting. Without this, Windows
+# checkouts (autocrlf=true) convert files to CRLF on disk, which then
+# makes Prettier's format:check falsely report every touched file as
+# "needs reformatting" - the actual committed content is fine (LF,
+# confirmed via CI, which runs on Linux and never sees this), it's a
+# local checkout artifact only. See docs/PROJECT_PLAN.md §7.
+* text=auto eol=lf
+
+# Binary files - never touch line endings, never diff as text.
+*.ico binary
+*.png binary
+*.jpg binary
+*.jpeg binary
+*.gif binary
+*.woff binary
+*.woff2 binary
