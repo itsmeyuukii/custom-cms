@@ -14,11 +14,15 @@ See also: [../CLAUDE.md](../CLAUDE.md) (code conventions — read this
 before writing new code, so style/patterns stay consistent),
 [SEEDING.md](SEEDING.md) (how to run `prisma/seed.ts`, locally and
 against a remote database, without risking your local dev pointing at
-production), [COLLECTIONS_PLAN.md](COLLECTIONS_PLAN.md) (design for the
-Payload-style Collections system), [SECURITY_REVIEW.md](SECURITY_REVIEW.md)
-(vulnerability findings), [RBAC_PLAN.md](RBAC_PLAN.md) (design for
-database-driven, admin-configurable roles/departments — replaces the
-fixed ADMIN/EDITOR/VIEWER enum with roles an admin creates and assigns
+production), [MONOREPO_PLAN.md](MONOREPO_PLAN.md) (design for
+restructuring into a monorepo — the CMS moves to `apps/cms/`, plus one
+or more separate frontend "site" apps consuming its REST API, run
+together locally via Turborepo), [COLLECTIONS_PLAN.md](COLLECTIONS_PLAN.md)
+(design for the Payload-style Collections system),
+[SECURITY_REVIEW.md](SECURITY_REVIEW.md) (vulnerability findings),
+[RBAC_PLAN.md](RBAC_PLAN.md) (design for database-driven,
+admin-configurable roles/departments — replaces the fixed
+ADMIN/EDITOR/VIEWER enum with roles an admin creates and assigns
 permissions to)
 
 ---
@@ -316,6 +320,11 @@ permissions` server-side (not just a hidden button), confirmed via
    on for non-canonical URLs (fine, canonical production URL is
    already public — only matters if those other URLs need to be public
    too).
+10. **Monorepo / multi-site restructure** — full design in
+    [MONOREPO_PLAN.md](MONOREPO_PLAN.md). Not sequenced relative to the
+    other P3 items above (independent concern — repo/deployment
+    structure, not app features); start whenever there's an actual
+    first site to build. Design-only so far, not started.
 
 ## 6. REST API design (P1 item 1 above)
 
