@@ -211,8 +211,27 @@ permissions` server-side (not just a hidden button), confirmed via
      error message, and that Admin's permission count stayed at 12
      (no partial write). Also confirmed editor/viewer get redirected
      away from `/admin/roles` and don't see the nav link.
-     **Not done yet:** phases 4–6 (see RBAC_PLAN.md §8) — `/admin/users`
-     UI, role creation from the admin UI, and dropping `LegacyRole`.
+   - **Phase 4 (`/admin/users` — list users, assign/remove roles), done
+     2026-09-16**: `/admin/users` (list: name, email, current roles)
+     and `/admin/users/[id]` (checkbox grid of every `Role`, posting to
+     `updateUserRoles`) — both gated on `users:manage`, sidebar link
+     included. Also resolved the follow-on lockout question RBAC_PLAN.md
+     flagged when this phase was scoped: `updateUserRoles` blocks a
+     save that would leave nobody holding `users:manage` *or* nobody
+     holding `roles:manage` (not just the former — a `roles:manage`
+     lockout has no recovery path through this page either). Verified
+     against the real app: as admin, listed all three seeded users with
+     correct roles, then drove the real `updateUserRoles` action
+     directly (multipart POST with the bound action's `$ACTION_1:0`/
+     `$ACTION_1:1` fields) to add Admin to editor's roles — confirmed
+     in the database — then reverted it. Separately attempted to strip
+     Admin's only role (the sole holder of both `users:manage` and
+     `roles:manage`) and confirmed the request came back `500` with the
+     lockout guard's error message and no partial write. Also confirmed
+     editor gets redirected away from `/admin/users` and doesn't see
+     the nav link.
+     **Not done yet:** phases 5–6 (see RBAC_PLAN.md §8) — role creation
+     from the admin UI, and dropping `LegacyRole`.
 
 ### P2 — depend on RBAC v2 being done
 
