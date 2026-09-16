@@ -23,29 +23,26 @@ async function main() {
     create: {
       email: "admin@example.com",
       name: "Admin",
-      role: "ADMIN",
       passwordHash,
     },
   });
 
-  await prisma.user.upsert({
+  const editor = await prisma.user.upsert({
     where: { email: "editor@example.com" },
     update: {},
     create: {
       email: "editor@example.com",
       name: "Editor",
-      role: "EDITOR",
       passwordHash,
     },
   });
 
-  await prisma.user.upsert({
+  const viewer = await prisma.user.upsert({
     where: { email: "viewer@example.com" },
     update: {},
     create: {
       email: "viewer@example.com",
       name: "Viewer",
-      role: "VIEWER",
       passwordHash,
     },
   });
@@ -100,11 +97,9 @@ async function main() {
   });
 
   // --- RBAC v2 (docs/RBAC_PLAN.md) ---
-  // Additive alongside the LegacyRole enum above: seeds the fixed
-  // permission list, three system roles matching today's ADMIN/EDITOR/
-  // VIEWER behavior, and backfills every user's UserRole from their
-  // current enum value, so nothing regresses once call sites migrate
-  // to requirePermission() (plan §6).
+  // Seeds the fixed permission list and the three system roles, then
+  // assigns each seeded user their matching role directly (the legacy
+  // enum this used to backfill from was dropped in plan §6 step 5).
 
   const permissionDefs: { key: string; label: string; group: string }[] = [
     { key: "pages:create", label: "Create pages", group: "Pages" },
@@ -194,17 +189,12 @@ async function main() {
     [],
   );
 
-  const roleByLegacyRole = {
-    ADMIN: adminRole,
-    EDITOR: editorRole,
-    VIEWER: viewerRole,
-  } as const;
-
-  const allUsers = await prisma.user.findMany({
-    select: { id: true, role: true },
-  });
-  for (const user of allUsers) {
-    const role = roleByLegacyRole[user.role];
+  const userRoleAssignments = [
+    { user: admin, role: adminRole },
+    { user: editor, role: editorRole },
+    { user: viewer, role: viewerRole },
+  ];
+  for (const { user, role } of userRoleAssignments) {
     await prisma.userRole.upsert({
       where: { userId_roleId: { userId: user.id, roleId: role.id } },
       update: {},
@@ -215,15 +205,15 @@ async function main() {
   console.log(
     "Seeded users:",
     admin.email,
-    "(ADMIN),",
-    "editor@example.com (EDITOR),",
-    "viewer@example.com (VIEWER)",
+    "(Admin),",
+    "editor@example.com (Editor),",
+    "viewer@example.com (Viewer)",
   );
   console.log(
     "Seeded RBAC v2 roles: Admin, Editor, Viewer —",
     permissionDefs.length,
-    "permissions, backfilled",
-    allUsers.length,
+    "permissions, assigned to",
+    userRoleAssignments.length,
     "user(s)",
   );
 }

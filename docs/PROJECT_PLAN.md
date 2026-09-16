@@ -61,7 +61,9 @@ created a page with a Hero block via Prisma, and confirmed it rendered
 correctly at its public URL with real data from the database.
 
 - `prisma/schema.prisma` — the data model:
-  - `User` (with `role`: ADMIN / EDITOR / VIEWER)
+  - `User`, with roles/permissions via RBAC v2's `Role`/`Permission`/
+    `UserRole`/`RolePermission` (see [RBAC_PLAN.md](RBAC_PLAN.md)) — the
+    old fixed `role` enum field was dropped once RBAC v2 fully replaced it
   - `Page`, `Post` — content, with a `status` (DRAFT / PUBLISHED / ARCHIVED)
   - `Component` — a reusable block _definition_ (e.g. "Hero", "Card Grid")
   - `Block` — one _instance_ of a Component placed on a specific Page, with its own content
@@ -95,7 +97,7 @@ correctly at its public URL with real data from the database.
 - Media has no upload flow (list only, no way to add a file)
 - Block content is entered as raw JSON in the admin — no real visual editor
 - No automated tests
-- RBAC v2 (database-driven roles), Collections system — designed, not built
+- Collections system — designed, not built (RBAC v2 shipped, see §5 item 2)
 - Branch protection not configured — CI reports status but doesn't yet block a failing merge
 - No rate limiting (login or public API)
 
@@ -244,8 +246,29 @@ permissions` server-side (not just a hidden button), confirmed via
      confirmed it came back `500` on the `Role_slug_key` unique
      constraint (no orphan row created). Also confirmed editor gets
      redirected away from `/admin/roles/new`. Test role deleted after.
-     **Not done yet:** phase 6 (see RBAC_PLAN.md §8) — dropping
-     `LegacyRole`.
+   - **Phase 6 (drop the legacy enum), done 2026-09-16 — RBAC v2
+     complete**: migration `20260916054538_drop_legacy_role` drops
+     `User.role` and the `LegacyRole` enum; `prisma/seed.ts` now
+     assigns each seeded user's `UserRole` directly instead of
+     backfilling from the enum. Before merging, confirmed via
+     `git grep` that nothing outside `schema.prisma`/`seed.ts`
+     referenced the legacy field or enum anymore. Verified locally:
+     applied the migration, reseeded, logged in as each of
+     admin/editor/viewer and confirmed `roleSlugs` in the session
+     matched, confirmed editor could still create a page and viewer
+     was still blocked from `/admin/pages/new`. **Production
+     verification mattered here more than usual**: this repo has a
+     live Vercel deployment where `prisma migrate deploy` runs
+     automatically on every deploy (`package.json`'s `build` script),
+     and the RBAC v2 backfill (assigning `UserRole` from each user's
+     legacy enum value) only ever happened via `prisma/seed.ts` — never
+     as part of a schema migration. So before merging, ran the updated
+     seed script against the actual production database (via a
+     temporary `DATABASE_URL` override, per `docs/SEEDING.md`) and
+     confirmed it reported backfilling all 3 real production users —
+     without that check, merging could have dropped the only record of
+     each production user's role with nothing in `UserRole` to replace
+     it, stranding everyone with zero permissions.
 
 ### P2 — depend on RBAC v2 being done
 

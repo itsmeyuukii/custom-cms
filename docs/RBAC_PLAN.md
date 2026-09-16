@@ -1,10 +1,12 @@
 # RBAC v2 — Database-Driven Roles & Permissions
 
-**Status: design only, nothing in this doc is implemented yet.** This
-supersedes the RBAC built in the previous pass (see
-[SECURITY_REVIEW.md](SECURITY_REVIEW.md) findings #1/#2) — that version
-is real and working, just hardcoded to three fixed roles. This plan
-replaces "fixed roles in code" with "roles as data an admin manages."
+**Status: fully implemented, 2026-09-16** (see §8 for the phased build
+order and `docs/PROJECT_PLAN.md`'s RBAC v2 entries for what was
+verified at each phase). This superseded the RBAC built in the
+previous pass (see [SECURITY_REVIEW.md](SECURITY_REVIEW.md) findings
+#1/#2) — that version was real and working, just hardcoded to three
+fixed roles. This plan replaced "fixed roles in code" with "roles as
+data an admin manages."
 
 ## The core distinction this design rests on
 
@@ -215,7 +217,8 @@ behavior need to carry over cleanly:
 5. Drop `User.role` and the `Role` enum in a final migration, once step 4
    is verified working end-to-end (same verification approach as before:
    log in as each seeded role, confirm expected access, via a real HTTP
-   request, not just reading the code).
+   request, not just reading the code). **Done, 2026-09-16** — see §8
+   phase 6.
 
 ## 7. Interaction with the Collections system
 
@@ -250,7 +253,22 @@ access-control idioms.
 4. `/admin/users` + role assignment UI.
 5. Role _creation_ from the admin UI (the actual "make a Marketing
    department" moment) — last, once editing/assignment are proven solid.
-6. Drop the old enum column (§6 step 5).
+6. Drop the old enum column (§6 step 5). **Done, 2026-09-16**: schema
+   migration `20260916054538_drop_legacy_role` dropped `User.role` and
+   the `LegacyRole` enum; `prisma/seed.ts` updated to assign each
+   seeded user's `UserRole` directly instead of backfilling from the
+   enum. Verified against the real app (local): logged in as each of
+   admin/editor/viewer post-migration, confirmed `roleSlugs` in the
+   session matched, confirmed editor could still create a page and
+   viewer was still blocked from `/admin/pages/new`, and confirmed the
+   public API still served content. Verified in production separately:
+   ran the updated `prisma/seed.ts` against the production database
+   first (confirming `UserRole` rows existed for all real users before
+   the column carrying that same information was dropped) — this
+   matters because `prisma migrate deploy` runs automatically on every
+   Vercel deploy, so merging the migration without confirming the
+   backfill first could have stranded every production user with zero
+   roles.
 
 ## Open questions
 
