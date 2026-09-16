@@ -1,8 +1,8 @@
 # See https://help.github.com/articles/ignoring-files/ for more about ignoring files.
 
-# dependencies
-/node_modules
-/.pnp
+# dependencies (unanchored - matches at root and inside each apps/* workspace)
+node_modules/
+.pnp
 .pnp.*
 .yarn/*
 !.yarn/patches
@@ -11,14 +11,14 @@
 !.yarn/versions
 
 # testing
-/coverage
+coverage/
 
-# next.js
-/.next/
-/out/
+# next.js (unanchored - each app under apps/* has its own .next/ build output)
+.next/
+out/
 
 # production
-/build
+build/
 
 # misc
 .DS_Store
@@ -36,6 +36,9 @@ yarn-error.log*
 
 # vercel
 .vercel
+
+# turborepo
+.turbo/
 
 # claude code local task state (but keep .claude/skills/ - shared, tracked)
 .claude/*

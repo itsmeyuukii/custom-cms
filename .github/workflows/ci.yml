@@ -18,7 +18,9 @@ jobs:
           cache: npm
       - run: npm install
       - run: npx prisma generate
+        working-directory: apps/cms
       - run: npx next typegen
+        working-directory: apps/cms
       - run: npm run format:check
       - run: npm run lint
       - run: npm run typecheck
