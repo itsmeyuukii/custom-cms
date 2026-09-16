@@ -18,11 +18,20 @@ export default async function AdminRolesList() {
 
   return (
     <div>
-      <h1 className="text-2xl font-semibold">Roles</h1>
-      <p className="mt-2 text-sm text-gray-500">
-        Named bundles of permissions. Creating new roles isn&apos;t built yet —
-        this lets you view and adjust what the existing roles can do.
-      </p>
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="text-2xl font-semibold">Roles</h1>
+          <p className="mt-2 text-sm text-gray-500">
+            Named bundles of permissions.
+          </p>
+        </div>
+        <Link
+          href="/admin/roles/new"
+          className="rounded bg-black px-4 py-2 text-sm text-white"
+        >
+          New role
+        </Link>
+      </div>
 
       <table className="mt-6 w-full text-left text-sm">
         <thead>

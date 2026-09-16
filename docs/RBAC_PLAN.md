@@ -173,7 +173,11 @@ permissions themselves (so only someone with `roles:manage` can create a
 role or hand out `roles:manage` to anyone else):
 
 - `/admin/roles` — list roles (name, description, permission count, user
-  count), create new role
+  count), link to create new role
+- `/admin/roles/new` — name/slug/description form (same shape as
+  `/admin/pages/new`'s title/slug form), posts to `createRole`, then
+  redirects straight to `/admin/roles/[id]` to set permissions — a new
+  role starts with none, same as a new page starts with no blocks.
 - `/admin/roles/[id]` — edit name/description, checkbox grid of every
   `Permission` grouped by `group`, save. `isSystem` roles show the same
   UI but block deletion.

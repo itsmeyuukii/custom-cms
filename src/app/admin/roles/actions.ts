@@ -1,8 +1,26 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
+import { redirect } from "next/navigation";
 import { requirePermission } from "@/lib/rbac";
 import { prisma } from "@/lib/prisma";
+
+export async function createRole(formData: FormData) {
+  await requirePermission("roles:manage");
+
+  const name = String(formData.get("name") ?? "").trim();
+  const slug = String(formData.get("slug") ?? "").trim();
+  const description = String(formData.get("description") ?? "").trim();
+
+  if (!name || !slug) throw new Error("Name and slug are required");
+
+  const role = await prisma.role.create({
+    data: { name, slug, description: description || null },
+  });
+
+  revalidatePath("/admin/roles");
+  redirect(`/admin/roles/${role.id}`);
+}
 
 /**
  * Would applying `newPermissionIds` to `roleId` leave nobody in the system
