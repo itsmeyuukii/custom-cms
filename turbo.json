@@ -6,7 +6,8 @@
       "persistent": true
     },
     "build": {
-      "outputs": [".next/**", "!.next/cache/**"]
+      "outputs": [".next/**", "!.next/cache/**"],
+      "env": ["DATABASE_URL", "AUTH_SECRET", "NEXTAUTH_URL"]
     },
     "lint": {},
     "typecheck": {}
