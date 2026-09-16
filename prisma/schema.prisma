@@ -6,23 +6,13 @@ datasource db {
   provider = "postgresql"
 }
 
-// Renamed from `Role` so it can coexist with the new RBAC v2 `Role` model
-// below during the additive migration (docs/RBAC_PLAN.md) — dropped
-// entirely once every call site has migrated to `requirePermission`.
-enum LegacyRole {
-  ADMIN
-  EDITOR
-  VIEWER
-}
-
 model User {
-  id            String     @id @default(cuid())
+  id            String    @id @default(cuid())
   name          String?
-  email         String     @unique
+  email         String    @unique
   emailVerified DateTime?
   image         String?
   passwordHash  String?
-  role          LegacyRole @default(VIEWER)
 
   accounts Account[]
   sessions Session[]
@@ -36,8 +26,8 @@ model User {
 }
 
 // RBAC v2 (docs/RBAC_PLAN.md) — database-driven roles & permissions.
-// Additive alongside the legacy `Role` enum / `User.role` field for now;
-// those are dropped once every call site has migrated (plan §6 step 5).
+// Replaced the legacy `Role` enum / `User.role` field entirely (plan §6
+// step 5) once every call site had migrated to `requirePermission`.
 
 // Fixed, developer-defined capability (`pages:publish`, `media:upload`, ...).
 // New permissions ship in code, not created from the admin UI.
