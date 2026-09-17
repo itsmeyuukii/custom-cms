@@ -24,3 +24,43 @@ jobs:
       - run: npm run format:check
       - run: npm run lint
       - run: npm run typecheck
+
+  e2e:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: test
+          POSTGRES_PASSWORD: test
+          POSTGRES_DB: custom_cms_test
+        ports: ["5432:5432"]
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+    env:
+      DATABASE_URL: "postgresql://test:test@localhost:5432/custom_cms_test"
+      AUTH_SECRET: "ci-test-secret-do-not-use-in-prod"
+      NEXTAUTH_URL: "http://localhost:4001"
+      SEED_USER_PASSWORD: ${{ secrets.SEED_USER_PASSWORD }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+      - run: npm install
+      - run: npx prisma generate
+        working-directory: apps/cms
+      - run: npx prisma migrate deploy
+        working-directory: apps/cms
+      - run: npm run db:seed
+        working-directory: apps/cms
+      - run: npx playwright install --with-deps chromium
+        working-directory: apps/cms
+      - run: npm run build
+        working-directory: apps/cms
+      - run: npm run e2e
+        working-directory: apps/cms

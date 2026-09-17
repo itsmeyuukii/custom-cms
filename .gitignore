@@ -12,6 +12,10 @@ node_modules/
 
 # testing
 coverage/
+test-results/
+playwright-report/
+blob-report/
+playwright/.cache/
 
 # next.js (unanchored - each app under apps/* has its own .next/ build output)
 .next/
