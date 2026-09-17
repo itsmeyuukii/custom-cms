@@ -5,7 +5,9 @@ a public URL they can use — starting with pasting it into a Block's raw
 JSON (e.g. `CardGrid`'s `imageUrl` field), same way all Block content is
 entered today.
 
-**Status: design only, nothing implemented yet.**
+**Status: Phases 1–2 (upload) done 2026-09-17, Phase 3 (deletion) done
+2026-09-17** — see `PROJECT_PLAN.md` §3 for what shipped and how each
+was verified.
 
 ## Context this design rests on
 
@@ -123,12 +125,18 @@ readOnly>` so it's trivially copyable to paste into a Block's JSON.
   and `/admin/users` (small, all-seeded-data lists), reasonable until the
   library actually grows large enough to matter.
 
-## 4. Deletion — out of scope for this phase
+## 4. Deletion — done, 2026-09-17
 
-`media:delete` already exists as a permission key but nothing in
-`PROJECT_PLAN.md` §4 flags deletion as expected in this pass, and Pages
-has the same asymmetry today (no delete flow either). Left as a small,
-separate follow-up once upload is proven working — see Open Questions.
+`deleteMedia(mediaId)` (`src/app/admin/media/actions.ts`), gated on the
+already-seeded `media:delete` permission: looks up the `Media` row,
+calls `del(media.url)` (`@vercel/blob`) to remove the blob, then deletes
+the row. A "Delete" button per grid item on `/admin/media`, rendered
+only when the session holds `media:delete`, posts to it via
+`deleteMedia.bind(null, item.id)` — same bound-server-action shape as
+`setPageStatus`/`addBlock` on the Pages admin UI. No confirmation
+dialog: matches this admin's existing precedent (no other destructive
+action in the admin UI has one either), revisit only if this becomes a
+real problem in practice.
 
 ## 5. Environment setup
 
