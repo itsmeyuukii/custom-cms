@@ -24,6 +24,8 @@ Vercel Blob-backed),
 [ADMIN_THEME_PLAN.md](ADMIN_THEME_PLAN.md) (design for a shared admin
 component library/theme, styled after Catalyst without redistributing
 its licensed source),
+[E2E_TESTING_PLAN.md](E2E_TESTING_PLAN.md) (design for Playwright
+e2e + visual regression testing),
 [SECURITY_REVIEW.md](SECURITY_REVIEW.md) (vulnerability findings),
 [RBAC_PLAN.md](RBAC_PLAN.md) (design for database-driven,
 admin-configurable roles/departments — replaces the fixed
@@ -130,8 +132,12 @@ default sequence, not a locked contract.
    model, validation); should be ready before Collections Phase 5
    (the generic admin UI), so that UI is built on it directly instead
    of needing to migrate later.
-5. Collections system
-6. Enforce Collections access via RBAC v2
+5. E2E & visual regression testing (Playwright) — see
+   [E2E_TESTING_PLAN.md](E2E_TESTING_PLAN.md). Functional coverage
+   (auth/RBAC/CRUD) is independent and valuable immediately; visual
+   coverage tracks the admin theme rollout phase-by-phase as it lands.
+6. Collections system
+7. Enforce Collections access via RBAC v2
 
 Reasoning for that order, and everything after it, follows.
 
