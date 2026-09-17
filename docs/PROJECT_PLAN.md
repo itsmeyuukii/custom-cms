@@ -19,6 +19,8 @@ restructuring into a monorepo — the CMS moves to `apps/cms/`, plus one
 or more separate frontend "site" apps consuming its REST API, run
 together locally via Turborepo), [COLLECTIONS_PLAN.md](COLLECTIONS_PLAN.md)
 (design for the Payload-style Collections system),
+[MEDIA_PLAN.md](MEDIA_PLAN.md) (design for the media upload flow,
+Vercel Blob-backed),
 [SECURITY_REVIEW.md](SECURITY_REVIEW.md) (vulnerability findings),
 [RBAC_PLAN.md](RBAC_PLAN.md) (design for database-driven,
 admin-configurable roles/departments — replaces the fixed
@@ -276,13 +278,15 @@ permissions` server-side (not just a hidden button), confirmed via
 
 ### P2 — depend on RBAC v2 being done
 
-3. **Media upload flow.** Sequenced after RBAC v2 (moved back from an
-   earlier draft of this plan that had it in P1) so its write action is
-   built once, correctly, against `requirePermission("media:upload")`
-   instead of the soon-to-be-replaced `WRITE_ROLES`. Still needs its own
-   small decision before starting: where files actually live (local
-   disk vs. a hosted object store) — not resolved here, resolve it when
-   this item starts.
+3. **Media upload flow** — full design in [MEDIA_PLAN.md](MEDIA_PLAN.md).
+   Sequenced after RBAC v2 (moved back from an earlier draft of this
+   plan that had it in P1) so its write action is built once, correctly,
+   against `requirePermission("media:upload")` instead of the
+   soon-to-be-replaced `WRITE_ROLES`. Storage decision resolved:
+   **Vercel Blob** (native to the existing hosting target, same
+   reasoning as the Prisma Postgres pick) — local disk was ruled out
+   since Vercel's serverless functions don't have a writable, persistent
+   filesystem.
 4. **Collections system** — see [COLLECTIONS_PLAN.md](COLLECTIONS_PLAN.md).
    Its `access` config is specified in terms of RBAC v2's permission
    keys (see that doc's updated note near `CollectionConfig`), so it
