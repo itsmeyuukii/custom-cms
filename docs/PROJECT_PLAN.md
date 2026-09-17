@@ -21,6 +21,8 @@ together locally via Turborepo), [COLLECTIONS_PLAN.md](COLLECTIONS_PLAN.md)
 (design for the Payload-style Collections system),
 [MEDIA_PLAN.md](MEDIA_PLAN.md) (design for the media upload flow,
 Vercel Blob-backed),
+[E2E_TESTING_PLAN.md](E2E_TESTING_PLAN.md) (design for Playwright
+e2e + visual regression testing),
 [SECURITY_REVIEW.md](SECURITY_REVIEW.md) (vulnerability findings),
 [RBAC_PLAN.md](RBAC_PLAN.md) (design for database-driven,
 admin-configurable roles/departments — replaces the fixed
@@ -122,8 +124,12 @@ default sequence, not a locked contract.
 1. ~~Read-only REST API (Pages & Posts)~~ — done, 2026-09-15
 2. ~~RBAC v2~~ — done, 2026-09-16. Full design in [RBAC_PLAN.md](RBAC_PLAN.md)
 3. ~~Media upload~~ — done, 2026-09-17 (upload + deletion)
-4. Collections system
-5. Enforce Collections access via RBAC v2
+4. E2E & visual regression testing (Playwright) — see
+   [E2E_TESTING_PLAN.md](E2E_TESTING_PLAN.md). Functional coverage
+   (auth/RBAC/CRUD) is independent and valuable immediately; visual
+   coverage tracks the admin theme rollout phase-by-phase as it lands.
+5. Collections system
+6. Enforce Collections access via RBAC v2
 
 Reasoning for that order, and everything after it, follows.
 
