@@ -1,7 +1,9 @@
-import Link from "next/link";
 import type { ReactNode } from "react";
 import { auth } from "@/lib/auth";
 import { hasPermission } from "@/lib/rbac";
+import { Navbar } from "@/components/ui/navbar";
+import { Sidebar, SidebarItem, SidebarSection } from "@/components/ui/sidebar";
+import { SidebarLayout } from "@/components/ui/sidebar-layout";
 
 export default async function AdminLayout({
   children,
@@ -19,19 +21,27 @@ export default async function AdminLayout({
   );
 
   return (
-    <div className="flex min-h-screen">
-      <aside className="w-56 border-r border-gray-200 p-4">
-        <h2 className="mb-4 font-semibold">Admin</h2>
-        <nav className="flex flex-col gap-2 text-sm">
-          <Link href="/admin">Dashboard</Link>
-          <Link href="/admin/pages">Pages</Link>
-          <Link href="/admin/posts">Posts</Link>
-          <Link href="/admin/media">Media</Link>
-          {canManageRoles && <Link href="/admin/roles">Roles</Link>}
-          {canManageUsers && <Link href="/admin/users">Users</Link>}
-        </nav>
-      </aside>
-      <main className="flex-1 p-6">{children}</main>
-    </div>
+    <SidebarLayout
+      navbar={<Navbar userName={session?.user?.name} />}
+      sidebar={
+        <Sidebar>
+          <div className="px-3 text-lg font-semibold text-zinc-900">Admin</div>
+          <SidebarSection>
+            <SidebarItem href="/admin">Dashboard</SidebarItem>
+            <SidebarItem href="/admin/pages">Pages</SidebarItem>
+            <SidebarItem href="/admin/posts">Posts</SidebarItem>
+            <SidebarItem href="/admin/media">Media</SidebarItem>
+            {canManageRoles && (
+              <SidebarItem href="/admin/roles">Roles</SidebarItem>
+            )}
+            {canManageUsers && (
+              <SidebarItem href="/admin/users">Users</SidebarItem>
+            )}
+          </SidebarSection>
+        </Sidebar>
+      }
+    >
+      {children}
+    </SidebarLayout>
   );
 }
