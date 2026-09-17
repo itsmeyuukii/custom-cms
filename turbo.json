@@ -10,6 +10,15 @@
       "env": ["DATABASE_URL", "AUTH_SECRET", "NEXTAUTH_URL"]
     },
     "lint": {},
-    "typecheck": {}
+    "typecheck": {},
+    "e2e": {
+      "cache": false,
+      "env": [
+        "DATABASE_URL",
+        "AUTH_SECRET",
+        "NEXTAUTH_URL",
+        "SEED_USER_PASSWORD"
+      ]
+    }
   }
 }
