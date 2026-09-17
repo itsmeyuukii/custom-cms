@@ -1,6 +1,6 @@
 "use server";
 
-import { put } from "@vercel/blob";
+import { put, del } from "@vercel/blob";
 import { revalidatePath } from "next/cache";
 import { requirePermission } from "@/lib/rbac";
 import { prisma } from "@/lib/prisma";
@@ -45,6 +45,18 @@ export async function uploadMedia(formData: FormData) {
       uploaderId: session.user.id,
     },
   });
+
+  revalidatePath("/admin/media");
+}
+
+export async function deleteMedia(mediaId: string) {
+  await requirePermission("media:delete");
+
+  const media = await prisma.media.findUnique({ where: { id: mediaId } });
+  if (!media) throw new Error("Media not found");
+
+  await del(media.url);
+  await prisma.media.delete({ where: { id: mediaId } });
 
   revalidatePath("/admin/media");
 }

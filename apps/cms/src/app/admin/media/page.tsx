@@ -1,7 +1,7 @@
 import { auth } from "@/lib/auth";
 import { hasPermission } from "@/lib/rbac";
 import { prisma } from "@/lib/prisma";
-import { uploadMedia } from "./actions";
+import { uploadMedia, deleteMedia } from "./actions";
 
 export default async function AdminMediaLibrary() {
   const [media, session] = await Promise.all([
@@ -9,10 +9,10 @@ export default async function AdminMediaLibrary() {
     auth(),
   ]);
 
-  const canUpload = await hasPermission(
-    session?.user?.roleSlugs,
-    "media:upload",
-  );
+  const [canUpload, canDelete] = await Promise.all([
+    hasPermission(session?.user?.roleSlugs, "media:upload"),
+    hasPermission(session?.user?.roleSlugs, "media:delete"),
+  ]);
 
   return (
     <div>
@@ -69,6 +69,13 @@ export default async function AdminMediaLibrary() {
               defaultValue={item.url}
               className="mt-1 w-full rounded border border-gray-200 px-1 py-0.5 text-[10px]"
             />
+            {canDelete && (
+              <form action={deleteMedia.bind(null, item.id)} className="mt-1">
+                <button type="submit" className="text-red-600 hover:underline">
+                  Delete
+                </button>
+              </form>
+            )}
           </li>
         ))}
         {media.length === 0 && (
