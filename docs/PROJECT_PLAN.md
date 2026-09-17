@@ -96,11 +96,12 @@ correctly at its public URL with real data from the database.
 - `src/lib/api-response.ts` + `src/app/api/v1/{pages,posts}/route.ts` + `src/app/api/v1/{pages,posts}/[slug]/route.ts` — the read-only REST API (see §6). Consistent `{ data }`/`{ data, meta }`/`{ error }` envelope, offset pagination with a server-side `pageSize` cap of 100, published-only content. Verified end-to-end against real data: single-item found/not-found for both resources, empty list, populated list, and pagination actually slicing results correctly across pages.
 - **Deployed to production**: https://custom-cms-lyart.vercel.app — Vercel (app hosting, auto-deploys on push to `main`) + Prisma Postgres (production database, free tier). `package.json`'s `build` script runs `prisma generate && prisma migrate deploy && next build`, so schema migrations apply automatically on every deploy. Verified working end-to-end against the live site: the production REST API (`/api/v1/pages`) returns real data from the real production database with the correct response shape.
 - `CLAUDE.md` — code conventions (file layout, auth pattern, API conventions, verification standard, git conventions) read automatically at the start of work in this repo, so style stays consistent without having to re-derive it each time.
+- **Media upload** — full design in [MEDIA_PLAN.md](MEDIA_PLAN.md), Phases 1–2 done 2026-09-17: `uploadMedia` Server Action (`src/app/admin/media/actions.ts`), gated on `media:upload`, validates mime type (image png/jpeg/gif/webp only) and a 4MB size cap, then uploads via Vercel Blob (`@vercel/blob`, `access: "public"`) and records the result in the `Media` table. `/admin/media` has a real upload form (file + alt text) and shows uploaded files as thumbnails with a copyable URL, since there's no visual Block editor yet to wire a picker into — the URL gets pasted into a Block's raw JSON (e.g. `CardGrid.imageUrl`) by hand. Verified end-to-end against a real Vercel Blob store: logged in as the seeded editor via a real NextAuth credentials POST, drove the actual rendered form via a real multipart POST against its real `$ACTION_ID_...` (not simulated), confirmed a real `Media` row was created with the correct `uploaderId`/`mimeType`/`size`, and confirmed the returned Blob URL was genuinely publicly fetchable (200, correct content-type) before cleaning up the test blob and row. Deletion (`media:delete`, already seeded/permission-gated) intentionally left for a follow-up per the plan's open questions.
 
 ## 4. What's NOT done yet
 
 - Posts have no create/edit form (list only)
-- Media has no upload flow (list only, no way to add a file)
+- Media deletion (upload works; no way to remove a file yet — `media:delete` permission exists, not wired to any UI/action)
 - Block content is entered as raw JSON in the admin — no real visual editor
 - No automated tests
 - Collections system — designed, not built (RBAC v2 shipped, see §5 item 2)
@@ -120,8 +121,8 @@ default sequence, not a locked contract.
 **Build next, in order:**
 
 1. ~~Read-only REST API (Pages & Posts)~~ — done, 2026-09-15
-2. RBAC v2 — full design in [RBAC_PLAN.md](RBAC_PLAN.md)
-3. Media upload
+2. ~~RBAC v2~~ — done, 2026-09-16. Full design in [RBAC_PLAN.md](RBAC_PLAN.md)
+3. ~~Media upload (upload)~~ — done, 2026-09-17; deletion still open
 4. Collections system
 5. Enforce Collections access via RBAC v2
 
@@ -278,15 +279,11 @@ permissions` server-side (not just a hidden button), confirmed via
 
 ### P2 — depend on RBAC v2 being done
 
-3. **Media upload flow** — full design in [MEDIA_PLAN.md](MEDIA_PLAN.md).
-   Sequenced after RBAC v2 (moved back from an earlier draft of this
-   plan that had it in P1) so its write action is built once, correctly,
-   against `requirePermission("media:upload")` instead of the
-   soon-to-be-replaced `WRITE_ROLES`. Storage decision resolved:
-   **Vercel Blob** (native to the existing hosting target, same
-   reasoning as the Prisma Postgres pick) — local disk was ruled out
-   since Vercel's serverless functions don't have a writable, persistent
-   filesystem.
+3. ~~**Media upload flow**~~ — **Phases 1–2 done, 2026-09-17.** Full
+   design in [MEDIA_PLAN.md](MEDIA_PLAN.md); see §3 above for what
+   shipped and how it was verified. **Still open (Phase 3, optional):
+   deletion** — `media:delete` is seeded and permission-gated code could
+   reuse the same pattern as `uploadMedia`, just not built yet.
 4. **Collections system** — see [COLLECTIONS_PLAN.md](COLLECTIONS_PLAN.md).
    Its `access` config is specified in terms of RBAC v2's permission
    keys (see that doc's updated note near `CollectionConfig`), so it
