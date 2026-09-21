@@ -7,7 +7,7 @@
     },
     "build": {
       "outputs": [".next/**", "!.next/cache/**"],
-      "env": ["DATABASE_URL", "AUTH_SECRET", "NEXTAUTH_URL"]
+      "env": ["DATABASE_URL", "AUTH_SECRET", "NEXTAUTH_URL", "CMS_API_URL"]
     },
     "lint": {},
     "typecheck": {},
