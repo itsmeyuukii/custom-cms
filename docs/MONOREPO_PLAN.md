@@ -211,11 +211,27 @@ dev -p 4002"`, no database/Prisma dependency — it's a pure REST API
   `next typegen` step for `apps/my-portfolio` to `.github/workflows/ci.yml`'s
   `checks` job so CI's `typecheck` (which fans out to every workspace
   app via Turborepo) doesn't fail the same way.
+- **Production deployment, in progress 2026-09-22**: a new, separate
+  Vercel project (not the existing `custom-cms` one) with **Root
+  Directory → `apps/my-portfolio`**, per §4 point 4 — Vercel correctly
+  auto-detects the Next.js app and its own `build`/`start` scripts from
+  that root, no Build/Install/Output command overrides needed.
+  `CMS_API_URL` set as a project env var for **Production and Preview**
+  (not Development — local dev reads `apps/my-portfolio/.env` directly)
+  to `https://custom-cms-lyart.vercel.app`, the live CMS's real domain.
+  This matters at _build_ time, not just request time: the home page's
+  `fetch` uses `next: { revalidate: 60 }`, which Next.js treats as
+  static-generation-eligible, so it's called once during the Vercel
+  build to prerender the page — an unset `CMS_API_URL` fails the build
+  outright (`src/lib/cms.ts` throws), not just the runtime render.
+  **Still open**: real assigned domain not yet recorded here (check the
+  project's own "Domains" tab once deployed — don't assume
+  `my-portfolio.vercel.app`, per the domain-naming gotcha in
+  `PROJECT_PLAN.md` §7, the same trap hit for the CMS project itself).
 - **Not done yet**: no real visual design, no `BlockRenderer`
   equivalent (the proof page just dumps each block's `data` as JSON —
   building a real per-component renderer here is the next step once
-  there's actual portfolio content/design to build toward), no
-  production deployment (needs its own Vercel project per §4 point 4).
+  there's actual portfolio content/design to build toward).
 
 ## Open questions
 
