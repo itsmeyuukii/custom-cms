@@ -1,6 +1,9 @@
 # Monorepo — Multi-Site Architecture
 
-**Status: design only, nothing implemented yet.**
+**Status: migration (§3) done 2026-09-15/16 (see `apps/cms/`, root
+`turbo.json`). First site (§4) scaffolded 2026-09-21:
+`apps/my-portfolio`, port 4002 — see §4 and the "first site" note
+below.**
 
 Goal: turn this repo into a monorepo holding the CMS (unchanged in
 purpose) plus one or more separate frontend "site" apps, each its own
@@ -180,18 +183,48 @@ Once the migration above is done and verified:
 4. Only then, if warranted: a shared API-client package (open question
    below).
 
+## First site: `apps/my-portfolio`
+
+Scaffolded 2026-09-21, proving the §4 path end-to-end:
+
+- `apps/my-portfolio/` — minimal Next.js app (TypeScript, Tailwind v4,
+  App Router), same conventions as `apps/cms` (`next.config.ts`,
+  `eslint.config.mjs`, `tsconfig.json` paths, Geist fonts). `"dev": "next
+dev -p 4002"`, no database/Prisma dependency — it's a pure REST API
+  consumer.
+- `src/lib/cms.ts` — a small, app-local `getPage(slug)` helper wrapping
+  `fetch(`${CMS_API_URL}/api/v1/pages/${slug}`)` from a Server
+  Component (`src/app/page.tsx`), per §4 point 2 (server-side only, no
+  CORS exposure). Not a shared package yet, per §5 — revisit only once
+  a second site duplicates this.
+- `CMS_API_URL` env var (`.env.example` added), local value
+  `http://localhost:4001`.
+- Verified end-to-end against a real local CMS: created a real
+  published `Page` (slug `home`) with a `Hero` `Block` via Prisma
+  directly against the local dev database (the seeded `admin` user as
+  author) — this is real portfolio content going forward, not
+  throwaway test data. Started both dev servers (`:4001` CMS, `:4002`
+  site) and confirmed `curl localhost:4002/` actually rendered the
+  real heading fetched live from `localhost:4001/api/v1/pages/home`.
+- Hit and fixed the same `LayoutProps`/`next typegen` gotcha
+  `PROJECT_PLAN.md` §7 documents for `apps/cms` — added a
+  `next typegen` step for `apps/my-portfolio` to `.github/workflows/ci.yml`'s
+  `checks` job so CI's `typecheck` (which fans out to every workspace
+  app via Turborepo) doesn't fail the same way.
+- **Not done yet**: no real visual design, no `BlockRenderer`
+  equivalent (the proof page just dumps each block's `data` as JSON —
+  building a real per-component renderer here is the next step once
+  there's actual portfolio content/design to build toward), no
+  production deployment (needs its own Vercel project per §4 point 4).
+
 ## Open questions
 
-- **What is the first site actually for, and what should it be
-  named?** `<site-name>` above is a placeholder — need a real answer
-  before step 2 of the build order starts. (Marketing site? Blog?
-  Something else entirely?)
+- **Shared API-client package** — worth it once there are 2+ sites
+  duplicating the same `fetch` + response-shape logic, not before.
+  Revisit after the first site is real.
 - **Should the REST API ever need auth for these sites** (e.g. to
   preview draft content, not just published), or is published-only
   public access sufficient for every site indefinitely? Ties into the
   `ApiKey` model floated in `PROJECT_PLAN.md` §6 but not built — no
   need to resolve this now, only if/when a site genuinely needs draft
   previews.
-- **Shared API-client package** — worth it once there are 2+ sites
-  duplicating the same `fetch` + response-shape logic, not before.
-  Revisit after the first site is real.

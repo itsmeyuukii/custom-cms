@@ -335,8 +335,12 @@ permissions` server-side (not just a hidden button), confirmed via
 10. **Monorepo / multi-site restructure** — full design in
     [MONOREPO_PLAN.md](MONOREPO_PLAN.md). Not sequenced relative to the
     other P3 items above (independent concern — repo/deployment
-    structure, not app features); start whenever there's an actual
-    first site to build. Design-only so far, not started.
+    structure, not app features). Migration to `apps/cms/` done
+    2026-09-15/16; first site (`apps/my-portfolio`, port 4002)
+    scaffolded 2026-09-21, fetching real published content from the
+    CMS's REST API — see MONOREPO_PLAN.md's "First site" section for
+    what's done and what's still open (real design, block rendering,
+    production deployment).
 
 ## 6. REST API design (P1 item 1 above)
 
