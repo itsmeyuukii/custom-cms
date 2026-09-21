@@ -21,6 +21,8 @@ jobs:
         working-directory: apps/cms
       - run: npx next typegen
         working-directory: apps/cms
+      - run: npx next typegen
+        working-directory: apps/my-portfolio
       - run: npm run format:check
       - run: npm run lint
       - run: npm run typecheck
