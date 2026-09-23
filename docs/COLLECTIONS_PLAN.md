@@ -6,7 +6,8 @@ config object" instead of "write a Prisma model + migration + admin pages
 
 - API route" by hand every time.
 
-**Status: design only, nothing in this doc is implemented yet.**
+**Status: phase 1 (config shape) done 2026-09-24 — see §4. Phases 2-7
+not started.**
 
 Decisions locked in (see [PROJECT_PLAN.md](PROJECT_PLAN.md) for the rest of
 the project's decisions):
@@ -154,20 +155,27 @@ export interface CollectionConfig {
   fields: Field[];
   slugField?: string; // which field (if any) maps to Document.slug
   access?: {
-    read?: "public" | Role[];
-    create?: Role[];
-    update?: Role[];
-    delete?: Role[];
+    read?: "public" | string[];
+    create?: string[];
+    update?: string[];
+    delete?: string[];
   };
 }
 ```
 
-> **Superseded by [RBAC_PLAN.md](RBAC_PLAN.md):** `Role[]` above refers
-> to the fixed three-value enum from the first RBAC pass. Once RBAC v2
-> lands (database-driven, admin-creatable roles), this shape changes to
-> permission-key strings (`create?: string[]`, e.g. `["pages:create"]`)
-> — see that doc's §7. Not fixed here since Collections isn't built yet
-> either; whichever lands second should just use the other's real shape.
+> **Resolved per [RBAC_PLAN.md](RBAC_PLAN.md) §7** (RBAC v2 landed
+> first): `access` uses permission-key strings, checked via the same
+> `requirePermission`/`hasPermission` every other write path already
+> uses — no separate access-control system for Collections. Keys are
+> **not** auto-generated per collection; they're seeded manually like
+> every other permission (`docs/RBAC_PLAN.md`'s "fixed, defined by
+> developers" model). Concretely: Posts reuses its already-seeded
+> `posts:create`/`posts:edit`/`posts:publish`/`posts:delete` keys once
+> it migrates to a collection (phase 6) rather than getting a parallel
+> `collection:posts:*` taxonomy for the same resource — a genuinely new
+> collection (no prior hand-written model) gets its own new keys
+> following the same `resource:action` pattern, seeded when that
+> collection is registered.
 
 ### Example: redefining Posts as a collection
 
@@ -182,9 +190,9 @@ export const posts: CollectionConfig = {
   slugField: "slug",
   access: {
     read: "public",
-    create: ["ADMIN", "EDITOR"],
-    update: ["ADMIN", "EDITOR"],
-    delete: ["ADMIN"],
+    create: ["posts:create"],
+    update: ["posts:edit"],
+    delete: ["posts:delete"],
   },
   fields: [
     { name: "title", type: "text", required: true },
@@ -222,8 +230,9 @@ write the mapping once, every new collection gets validation for free.
 
 ## 4. Phased build order
 
-1. **This config shape** (`src/collections/types.ts`) — done once this
-   plan is agreed on, no runtime behavior yet.
+1. ~~**This config shape**~~ (`src/collections/types.ts`) — **done,
+   2026-09-24**, no runtime behavior yet — nothing imports it. Also
+   resolved the `access` shape per the note above.
 2. `Document` Prisma model + migration.
 3. Config → Zod validator generator.
 4. Generic server actions: `createDocument(collectionSlug, data)`,
