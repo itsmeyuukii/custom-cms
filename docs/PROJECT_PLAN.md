@@ -26,6 +26,9 @@ component library/theme, styled after Catalyst without redistributing
 its licensed source),
 [E2E_TESTING_PLAN.md](E2E_TESTING_PLAN.md) (design for Playwright
 e2e + visual regression testing),
+[PORTFOLIO_THEME_PLAN.md](PORTFOLIO_THEME_PLAN.md) (design for breaking
+the "Charcoal & Ember" portfolio theme into components for
+`apps/my-portfolio`, placeholder-data-driven — CMS wiring comes later),
 [SECURITY_REVIEW.md](SECURITY_REVIEW.md) (vulnerability findings),
 [RBAC_PLAN.md](RBAC_PLAN.md) (design for database-driven,
 admin-configurable roles/departments — replaces the fixed
@@ -341,6 +344,13 @@ permissions` server-side (not just a hidden button), confirmed via
     CMS's REST API — see MONOREPO_PLAN.md's "First site" section for
     what's done and what's still open (real design, block rendering,
     production deployment).
+11. **Portfolio theme breakdown** — design in
+    [PORTFOLIO_THEME_PLAN.md](PORTFOLIO_THEME_PLAN.md), the "real
+    design" gap item 10 flags. Ports the "Charcoal & Ember" theme into
+    `apps/my-portfolio` as placeholder-data-driven components — not
+    sequenced relative to other P3 items, but a prerequisite for a
+    follow-up CMS-wiring plan (replacing the placeholder data with real
+    fetched content) that comes after it.
 
 ## 6. REST API design (P1 item 1 above)
 
