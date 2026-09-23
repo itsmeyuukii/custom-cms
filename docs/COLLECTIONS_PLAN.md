@@ -6,8 +6,8 @@ config object" instead of "write a Prisma model + migration + admin pages
 
 - API route" by hand every time.
 
-**Status: phase 1 (config shape) done 2026-09-24 — see §4. Phases 2-7
-not started.**
+**Status: phases 1-2 (config shape, `Document` model) done 2026-09-24 —
+see §4. Phases 3-7 not started.**
 
 Decisions locked in (see [PROJECT_PLAN.md](PROJECT_PLAN.md) for the rest of
 the project's decisions):
@@ -233,7 +233,15 @@ write the mapping once, every new collection gets validation for free.
 1. ~~**This config shape**~~ (`src/collections/types.ts`) — **done,
    2026-09-24**, no runtime behavior yet — nothing imports it. Also
    resolved the `access` shape per the note above.
-2. `Document` Prisma model + migration.
+2. ~~**`Document` Prisma model + migration**~~ — **done, 2026-09-24**:
+   additive-only (`authorId` nullable, so no backfill needed), migration
+   `20260923215026_collections_document_model`. Verified against the
+   real local database, not just `tsc`: created a real `Document` row
+   (`collection: "posts"`), fetched it back by its `[collection, slug]`
+   unique key, confirmed a duplicate `[collection, slug]` insert is
+   actually rejected by the constraint (not just assumed from the
+   schema), then deleted it and confirmed the delete took. No app code
+   reads/writes `Document` yet — that's phase 4.
 3. Config → Zod validator generator.
 4. Generic server actions: `createDocument(collectionSlug, data)`,
    `updateDocument`, etc. — validate against the collection config, then
