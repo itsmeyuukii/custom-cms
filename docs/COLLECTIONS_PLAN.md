@@ -6,8 +6,9 @@ config object" instead of "write a Prisma model + migration + admin pages
 
 - API route" by hand every time.
 
-**Status: phases 1-3 (config shape, `Document` model, Zod validator
-generator) done — see §4. Phases 4-7 not started.**
+**Status: phases 1-4 (config shape, `Document` model, Zod validator
+generator, generic server actions) done — see §4. Phases 5-7 not
+started.**
 
 Decisions locked in (see [PROJECT_PLAN.md](PROJECT_PLAN.md) for the rest of
 the project's decisions):
@@ -281,9 +282,49 @@ enforced. All passed as expected.
 3. ~~**Config → Zod validator generator**~~ — **done**:
    [src/collections/validation.ts](../src/collections/validation.ts), see
    §3 above for what shipped and how it was verified.
-4. Generic server actions: `createDocument(collectionSlug, data)`,
-   `updateDocument`, etc. — validate against the collection config, then
-   write to `Document`.
+4. ~~**Generic server actions**~~ — **done**:
+   [src/collections/registry.ts](../src/collections/registry.ts) (a
+   `slug → CollectionConfig` map, mirroring
+   [src/components/blocks/registry.tsx](../src/components/blocks/registry.tsx)'s
+   pattern for Components — empty until phase 6 registers Posts) and
+   [src/collections/actions.ts](../src/collections/actions.ts)
+   (`createDocument(collectionSlug, input)`, `updateDocument(id, input)`,
+   `deleteDocument(id)`). Each: looks up the collection's config,
+   authorizes via `access.<action>` (any one of the listed permission
+   keys grants access — OR, not AND; an action with no keys configured
+   fails closed rather than being treated as open), validates `input`
+   against `collectionToZod(config)` (phase 3), rejects a write that
+   would collide with an existing Document on a `unique` field (a real
+   `prisma.document.findFirst` against the JSONB `data` column, since
+   Postgres itself can't enforce uniqueness inside JSON), then writes to
+   `Document` — deriving `Document.slug` from `config.slugField` when
+   set. `update`/`delete` resolve the collection from the existing
+   Document's own `collection` value, so callers only ever pass an `id`.
+   No admin UI calls these yet (phase 5) and no `revalidatePath` calls
+   were added for that reason — left for phase 5 once real route paths
+   exist to invalidate.
+
+   Verified against the real local database and real sessions, not just
+   `tsc`: registered a temporary `test-items` collection (reusing the
+   already-seeded `posts:create`/`posts:edit`/`posts:delete` permission
+   keys) behind a temporary API route
+   (`src/app/api/zzz-test-collections-temp/`, deleted after — note the
+   first attempt at `_test-collections` 404'd, since Next.js treats a
+   `_`-prefixed route folder as a private, unrouted segment). Logged in
+   as the real seeded editor/viewer/admin via actual NextAuth credentials
+   POSTs, then drove the real actions via real HTTP requests against the
+   running dev server: created a real Document as editor; a duplicate
+   `name` was rejected by the uniqueness check; a request missing the
+   required `name` field was rejected by Zod with a real per-field error
+   message; updated the Document as editor; confirmed the viewer (who
+   holds neither `posts:create` nor `posts:delete`) got a real `403`-style
+   `Forbidden` response from both `create` and `delete`, not a
+   silently-hidden option; deleted the Document as admin (who does hold
+   `posts:delete`); confirmed a further update against the now-deleted id
+   genuinely threw Prisma's `findUniqueOrThrow` not-found error rather
+   than silently succeeding; and confirmed via a one-off script that zero
+   `test-items` rows were left in the database afterward.
+
 5. Generic admin UI: `/admin/[collection]` list page and
    `/admin/[collection]/[id]` edit page, rendering a form generated from
    the field config (a `<FieldInput field={field} />` component with one
