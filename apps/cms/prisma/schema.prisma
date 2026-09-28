@@ -14,12 +14,13 @@ model User {
   image         String?
   passwordHash  String?
 
-  accounts Account[]
-  sessions Session[]
-  pages    Page[]
-  posts    Post[]
-  media    Media[]
-  roles    UserRole[]
+  accounts  Account[]
+  sessions  Session[]
+  pages     Page[]
+  posts     Post[]
+  media     Media[]
+  roles     UserRole[]
+  documents Document[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -199,4 +200,26 @@ model Media {
   uploader   User   @relation(fields: [uploaderId], references: [id])
 
   createdAt DateTime @default(now())
+}
+
+// Generic storage for the Collections system (docs/COLLECTIONS_PLAN.md).
+// One row per item in any registered collection; `data` is schemaless at
+// the database level — shape/validation is enforced in app code against
+// that collection's CollectionConfig (src/collections/types.ts) before
+// every write, not by Postgres.
+model Document {
+  id         String        @id @default(cuid())
+  collection String // config slug, e.g. "posts" — matches CollectionConfig.slug
+  slug       String? // only set if the collection has a slug-like field
+  status     ContentStatus @default(DRAFT)
+  data       Json
+
+  authorId String?
+  author   User?   @relation(fields: [authorId], references: [id])
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([collection, slug])
+  @@index([collection, status])
 }
