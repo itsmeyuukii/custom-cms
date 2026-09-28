@@ -132,10 +132,11 @@ default sequence, not a locked contract.
 2. ~~RBAC v2~~ — done, 2026-09-16. Full design in [RBAC_PLAN.md](RBAC_PLAN.md)
 3. ~~Media upload~~ — done, 2026-09-17 (upload + deletion)
 4. Admin UI theme (component library) — see [ADMIN_THEME_PLAN.md](ADMIN_THEME_PLAN.md).
-   Runs alongside Collections' non-UI phases (config shape, `Document`
-   model, validation); should be ready before Collections Phase 5
-   (the generic admin UI), so that UI is built on it directly instead
-   of needing to migrate later.
+   **Phases 1-4 done** (foundation primitives, login, admin shell,
+   Roles & Users pages) — phases 5-8 not started. Collections Phase 5
+   (the generic admin UI) landed before this reached it, so it did
+   _not_ get built on this component library as originally intended —
+   flagged as a follow-up in `ADMIN_THEME_PLAN.md` phase 8.
 5. E2E & visual regression testing (Playwright) — see
    [E2E_TESTING_PLAN.md](E2E_TESTING_PLAN.md). Functional coverage
    (auth/RBAC/CRUD) is independent and valuable immediately; visual

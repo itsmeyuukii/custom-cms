@@ -2,6 +2,13 @@ import { notFound, redirect } from "next/navigation";
 import { prisma } from "@/lib/prisma";
 import { auth } from "@/lib/auth";
 import { hasPermission } from "@/lib/rbac";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
+import { Field, FieldGroup, Label } from "@/components/ui/fieldset";
+import { Checkbox, CheckboxField } from "@/components/ui/checkbox";
+import { Badge } from "@/components/ui/badge";
+import { Text } from "@/components/ui/text";
 import { updateRole } from "../actions";
 
 export default async function EditRole({
@@ -44,61 +51,54 @@ export default async function EditRole({
   return (
     <div className="max-w-2xl">
       <div>
-        <h1 className="text-2xl font-semibold">
+        <h1 className="text-2xl font-semibold text-zinc-900">
           {role.name}
           {role.isSystem && (
-            <span className="ml-2 rounded bg-gray-100 px-1.5 py-0.5 text-xs font-normal text-gray-500">
+            <Badge className="ml-2 align-middle" color="zinc">
               system
-            </span>
+            </Badge>
           )}
         </h1>
-        <p className="text-sm text-gray-500">
+        <Text>
           {role.slug} · {role._count.users} user
           {role._count.users === 1 ? "" : "s"}
-        </p>
+        </Text>
       </div>
 
       <form action={updateThisRole} className="mt-6 space-y-6">
-        <div>
-          <label className="block text-sm font-medium">Name</label>
-          <input
-            name="name"
-            defaultValue={role.name}
-            required
-            className="mt-1 w-full rounded border border-gray-300 px-3 py-2"
-          />
-        </div>
-        <div>
-          <label className="block text-sm font-medium">Description</label>
-          <textarea
-            name="description"
-            defaultValue={role.description ?? ""}
-            rows={2}
-            className="mt-1 w-full rounded border border-gray-300 px-3 py-2"
-          />
-        </div>
+        <FieldGroup>
+          <Field>
+            <Label htmlFor="name">Name</Label>
+            <Input id="name" name="name" defaultValue={role.name} required />
+          </Field>
+          <Field>
+            <Label htmlFor="description">Description</Label>
+            <Textarea
+              id="description"
+              name="description"
+              defaultValue={role.description ?? ""}
+              rows={2}
+            />
+          </Field>
+        </FieldGroup>
 
         <div>
-          <h2 className="font-semibold">Permissions</h2>
+          <h2 className="font-semibold text-zinc-900">Permissions</h2>
           <div className="mt-2 space-y-4">
             {[...groups.entries()].map(([group, groupPermissions]) => (
               <div key={group}>
-                <h3 className="text-sm font-medium text-gray-500">{group}</h3>
+                <h3 className="text-sm font-medium text-zinc-500">{group}</h3>
                 <div className="mt-1 space-y-1">
                   {groupPermissions.map((permission) => (
-                    <label
-                      key={permission.id}
-                      className="flex items-center gap-2 text-sm"
-                    >
-                      <input
-                        type="checkbox"
+                    <CheckboxField key={permission.id}>
+                      <Checkbox
                         name="permissionIds"
                         value={permission.id}
                         defaultChecked={checkedIds.has(permission.id)}
                       />
                       {permission.label}
-                      <span className="text-gray-400">({permission.key})</span>
-                    </label>
+                      <span className="text-zinc-400">({permission.key})</span>
+                    </CheckboxField>
                   ))}
                 </div>
               </div>
@@ -106,12 +106,7 @@ export default async function EditRole({
           </div>
         </div>
 
-        <button
-          type="submit"
-          className="rounded bg-black px-4 py-2 text-sm text-white"
-        >
-          Save
-        </button>
+        <Button type="submit">Save</Button>
       </form>
     </div>
   );

@@ -1,8 +1,18 @@
 import { redirect } from "next/navigation";
-import Link from "next/link";
 import { prisma } from "@/lib/prisma";
 import { auth } from "@/lib/auth";
 import { hasPermission } from "@/lib/rbac";
+import { ButtonLink } from "@/components/ui/button";
+import { TextLink } from "@/components/ui/text";
+import { Badge } from "@/components/ui/badge";
+import {
+  Table,
+  TableHead,
+  TableBody,
+  TableRow,
+  TableHeader,
+  TableCell,
+} from "@/components/ui/table";
 
 export default async function AdminRolesList() {
   const session = await auth();
@@ -20,58 +30,56 @@ export default async function AdminRolesList() {
     <div>
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-semibold">Roles</h1>
-          <p className="mt-2 text-sm text-gray-500">
+          <h1 className="text-2xl font-semibold text-zinc-900">Roles</h1>
+          <p className="mt-2 text-sm text-zinc-500">
             Named bundles of permissions.
           </p>
         </div>
-        <Link
-          href="/admin/roles/new"
-          className="rounded bg-black px-4 py-2 text-sm text-white"
-        >
-          New role
-        </Link>
+        <ButtonLink href="/admin/roles/new">New role</ButtonLink>
       </div>
 
-      <table className="mt-6 w-full text-left text-sm">
-        <thead>
-          <tr className="border-b border-gray-200 text-gray-500">
-            <th className="py-2">Name</th>
-            <th className="py-2">Description</th>
-            <th className="py-2">Permissions</th>
-            <th className="py-2">Users</th>
-          </tr>
-        </thead>
-        <tbody>
+      <Table className="mt-6">
+        <TableHead>
+          <TableRow header>
+            <TableHeader>Name</TableHeader>
+            <TableHeader>Description</TableHeader>
+            <TableHeader>Permissions</TableHeader>
+            <TableHeader>Users</TableHeader>
+          </TableRow>
+        </TableHead>
+        <TableBody>
           {roles.map((role) => (
-            <tr key={role.id} className="border-b border-gray-100">
-              <td className="py-2">
-                <Link
-                  href={`/admin/roles/${role.id}`}
-                  className="hover:underline"
-                >
+            <TableRow key={role.id}>
+              <TableCell>
+                <TextLink href={`/admin/roles/${role.id}`}>
                   {role.name}
-                </Link>
+                </TextLink>
                 {role.isSystem && (
-                  <span className="ml-2 rounded bg-gray-100 px-1.5 py-0.5 text-xs text-gray-500">
+                  <Badge className="ml-2" color="zinc">
                     system
-                  </span>
+                  </Badge>
                 )}
-              </td>
-              <td className="py-2 text-gray-500">{role.description ?? "—"}</td>
-              <td className="py-2 text-gray-500">{role._count.permissions}</td>
-              <td className="py-2 text-gray-500">{role._count.users}</td>
-            </tr>
+              </TableCell>
+              <TableCell className="text-zinc-500">
+                {role.description ?? "—"}
+              </TableCell>
+              <TableCell className="text-zinc-500">
+                {role._count.permissions}
+              </TableCell>
+              <TableCell className="text-zinc-500">
+                {role._count.users}
+              </TableCell>
+            </TableRow>
           ))}
           {roles.length === 0 && (
-            <tr>
-              <td colSpan={4} className="py-6 text-center text-gray-400">
+            <TableRow>
+              <TableCell colSpan={4} className="py-6 text-center text-zinc-400">
                 No roles yet.
-              </td>
-            </tr>
+              </TableCell>
+            </TableRow>
           )}
-        </tbody>
-      </table>
+        </TableBody>
+      </Table>
     </div>
   );
 }
