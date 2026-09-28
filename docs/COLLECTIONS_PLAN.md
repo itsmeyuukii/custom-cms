@@ -6,9 +6,9 @@ config object" instead of "write a Prisma model + migration + admin pages
 
 - API route" by hand every time.
 
-**Status: phases 1-4 (config shape, `Document` model, Zod validator
-generator, generic server actions) done — see §4. Phases 5-7 not
-started.**
+**Status: phases 1-5 (config shape, `Document` model, Zod validator
+generator, generic server actions, generic admin UI) done — see §4.
+Phases 6-7 not started.**
 
 Decisions locked in (see [PROJECT_PLAN.md](PROJECT_PLAN.md) for the rest of
 the project's decisions):
@@ -325,10 +325,54 @@ enforced. All passed as expected.
    than silently succeeding; and confirmed via a one-off script that zero
    `test-items` rows were left in the database afterward.
 
-5. Generic admin UI: `/admin/[collection]` list page and
-   `/admin/[collection]/[id]` edit page, rendering a form generated from
-   the field config (a `<FieldInput field={field} />` component with one
-   case per `FieldType`).
+5. ~~**Generic admin UI**~~ — **done**:
+   [src/app/admin/[collection]/page.tsx](../src/app/admin/[collection]/page.tsx)
+   (list), `.../new/page.tsx` (create form), `.../[id]/page.tsx` (edit
+   form + delete), and `.../actions.ts` (thin `"use server"` wrappers
+   converting `FormData` via the new
+   [src/collections/formData.ts](../src/collections/formData.ts) before
+   calling phase 4's `createDocument`/`updateDocument`/`deleteDocument` —
+   all authorization/validation/uniqueness stays in those, this layer is
+   just glue plus `redirect`/`revalidatePath`).
+   [src/collections/FieldInput.tsx](../src/collections/FieldInput.tsx) is
+   the `<FieldInput field={field} />` component the plan called for, one
+   case per `FieldType`; a shared `hasCollectionAccess` (pulled out of
+   phase 4's `actions.ts` into
+   [src/collections/access.ts](../src/collections/access.ts), so the
+   server actions and the admin UI can't check `access.<action>`
+   differently) decides what each page renders — same "read is always
+   visible, write UI only for whoever holds the permission" pattern
+   `/admin/pages` already uses, right down to a disabled read-only form
+   instead of a form at all. The admin sidebar now also renders one nav
+   item per registered collection instead of a fixed list, so nothing
+   needs editing there when phase 6 registers Posts.
+
+   Two deliberate MVP simplifications, both matching existing precedent
+   rather than introducing a new pattern: `array`/`blocks` fields render
+   as raw JSON textareas, not a dynamic add/remove UI — the same "no
+   visual editor yet, raw JSON for now" state Block data on Pages is
+   already in. `relationship`/`upload` fields are plain text inputs for
+   an id (one per line for a `many` relationship) — there's no
+   cross-collection browse/picker UI yet either.
+
+   Verified against the real database through the real rendered UI, not
+   just `tsc`: temporarily registered a `zzz-test-items` collection
+   (text/textarea/boolean/select fields, reusing the seeded
+   `posts:create`/`edit`/`delete` keys) and ran the dev server. Logged in
+   as editor via real NextAuth credentials POSTs, fetched
+   `/admin/zzz-test-items/new`, and drove its actual rendered form as a
+   real multipart POST (extracting the real `$ACTION_1:0`/`$ACTION_1:1`
+   bound-action fields, not simulated) — got redirected to a real new
+   Document's edit page with every submitted value (text, textarea,
+   select) rendering back correctly. Updated it the same way and
+   confirmed the new values persisted on refetch. Logged in as viewer and
+   confirmed the list page hides "New", the edit page renders all fields
+   `disabled` with no Save/Delete button, and navigating straight to
+   `/new` redirects away. Logged in as admin (the only seeded role
+   holding `posts:delete`) and deleted the real Document via its actual
+   rendered delete form — confirmed the edit page 404s afterward — then
+   confirmed via a one-off script that zero `zzz-test-items` rows
+   remained. Reverted the temporary registry entry before committing.
 6. Migrate `Post` to be the first real collection end-to-end (retire the
    old stub `/admin/posts` page, retire the `Post` Prisma model once data
    is migrated).

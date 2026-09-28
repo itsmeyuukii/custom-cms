@@ -4,6 +4,7 @@ import { hasPermission } from "@/lib/rbac";
 import { Navbar } from "@/components/ui/navbar";
 import { Sidebar, SidebarItem, SidebarSection } from "@/components/ui/sidebar";
 import { SidebarLayout } from "@/components/ui/sidebar-layout";
+import { collectionRegistry } from "@/collections/registry";
 
 export default async function AdminLayout({
   children,
@@ -31,6 +32,11 @@ export default async function AdminLayout({
             <SidebarItem href="/admin/pages">Pages</SidebarItem>
             <SidebarItem href="/admin/posts">Posts</SidebarItem>
             <SidebarItem href="/admin/media">Media</SidebarItem>
+            {Object.values(collectionRegistry).map((config) => (
+              <SidebarItem key={config.slug} href={`/admin/${config.slug}`}>
+                {config.labelPlural ?? `${config.label}s`}
+              </SidebarItem>
+            ))}
             {canManageRoles && (
               <SidebarItem href="/admin/roles">Roles</SidebarItem>
             )}

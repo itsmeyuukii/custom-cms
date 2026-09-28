@@ -302,14 +302,16 @@ permissions` server-side (not just a hidden button), confirmed via
    Its `access` config is specified in terms of RBAC v2's permission
    keys (see that doc's updated note near `CollectionConfig`), so it
    comes after item 2 for the same reason Media upload does. **In
-   progress, started 2026-09-24**: phases 1-4 done (`src/collections/types.ts`
+   progress, started 2026-09-24**: phases 1-5 done (`src/collections/types.ts`
    config shape; the `Document` Prisma model + migration verified against
    a real local database; `src/collections/validation.ts`'s config → Zod
-   generator; and `src/collections/registry.ts` + `actions.ts`'s generic
-   `createDocument`/`updateDocument`/`deleteDocument`, verified end-to-end
-   against a real database and real sessions across editor/viewer/admin)
-   — phases 5-7 (generic admin UI, migrating `Post`, the public API) not
-   started. Once it
+   generator; `src/collections/registry.ts` + `actions.ts`'s generic
+   `createDocument`/`updateDocument`/`deleteDocument`; and the generic
+   admin UI at `src/app/admin/[collection]/`, `FieldInput.tsx`, and
+   `access.ts`) — each phase verified end-to-end against a real database
+   and real sessions across editor/viewer/admin, the UI phase through the
+   actual rendered forms, not just API calls — phases 6-7 (migrating
+   `Post`, the public API) not started. Once it
    lands, the hand-written Pages/Posts API from item 1 generalizes into
    `/api/v1/:collection` per that plan's phase 7, and Posts gets migrated
    to be its first real collection.

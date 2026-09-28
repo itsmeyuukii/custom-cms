@@ -8,42 +8,11 @@
 // call underneath.
 
 import type { Prisma } from "@prisma/client";
-import { auth } from "@/lib/auth";
-import { hasPermission } from "@/lib/rbac";
 import { prisma } from "@/lib/prisma";
 import { collectionToZod } from "./validation";
 import { getCollectionConfig } from "./registry";
+import { requireCollectionAccess } from "./access";
 import type { CollectionConfig } from "./types";
-
-/**
- * `access.<action>` is a list of permission keys that each independently
- * grant access (OR, not AND) — matching how a collection like Posts can
- * list both `posts:edit` and a future `posts:editOwn`-style key as
- * alternatives. An action with no keys configured is a config mistake,
- * not "open to everyone" — fails closed.
- */
-async function requireCollectionAccess(
-  config: CollectionConfig,
-  action: "create" | "update" | "delete",
-) {
-  const keys = config.access?.[action];
-  if (!keys || keys.length === 0) {
-    throw new Error(
-      `Collection "${config.slug}" has no access.${action} permissions configured`,
-    );
-  }
-
-  const session = await auth();
-  if (!session?.user?.id) {
-    throw new Error("Forbidden: insufficient permissions");
-  }
-
-  for (const key of keys) {
-    if (await hasPermission(session.user.roleSlugs, key)) return session;
-  }
-
-  throw new Error("Forbidden: insufficient permissions");
-}
 
 function parseDocumentData(config: CollectionConfig, input: unknown) {
   const result = collectionToZod(config).safeParse(input);
