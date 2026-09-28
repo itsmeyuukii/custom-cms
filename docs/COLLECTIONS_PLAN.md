@@ -373,6 +373,7 @@ enforced. All passed as expected.
    rendered delete form — confirmed the edit page 404s afterward — then
    confirmed via a one-off script that zero `zzz-test-items` rows
    remained. Reverted the temporary registry entry before committing.
+
 6. Migrate `Post` to be the first real collection end-to-end (retire the
    old stub `/admin/posts` page, retire the `Post` Prisma model once data
    is migrated).
