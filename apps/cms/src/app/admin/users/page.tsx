@@ -1,8 +1,17 @@
 import { redirect } from "next/navigation";
-import Link from "next/link";
 import { prisma } from "@/lib/prisma";
 import { auth } from "@/lib/auth";
 import { hasPermission } from "@/lib/rbac";
+import { TextLink } from "@/components/ui/text";
+import { Badge } from "@/components/ui/badge";
+import {
+  Table,
+  TableHead,
+  TableBody,
+  TableRow,
+  TableHeader,
+  TableCell,
+} from "@/components/ui/table";
 
 export default async function AdminUsersList() {
   const session = await auth();
@@ -18,48 +27,53 @@ export default async function AdminUsersList() {
 
   return (
     <div>
-      <h1 className="text-2xl font-semibold">Users</h1>
-      <p className="mt-2 text-sm text-gray-500">
+      <h1 className="text-2xl font-semibold text-zinc-900">Users</h1>
+      <p className="mt-2 text-sm text-zinc-500">
         Assign or remove roles per user. Creating new users isn&apos;t built
         here yet.
       </p>
 
-      <table className="mt-6 w-full text-left text-sm">
-        <thead>
-          <tr className="border-b border-gray-200 text-gray-500">
-            <th className="py-2">Name</th>
-            <th className="py-2">Email</th>
-            <th className="py-2">Roles</th>
-          </tr>
-        </thead>
-        <tbody>
+      <Table className="mt-6">
+        <TableHead>
+          <TableRow header>
+            <TableHeader>Name</TableHeader>
+            <TableHeader>Email</TableHeader>
+            <TableHeader>Roles</TableHeader>
+          </TableRow>
+        </TableHead>
+        <TableBody>
           {users.map((user) => (
-            <tr key={user.id} className="border-b border-gray-100">
-              <td className="py-2">
-                <Link
-                  href={`/admin/users/${user.id}`}
-                  className="hover:underline"
-                >
+            <TableRow key={user.id}>
+              <TableCell>
+                <TextLink href={`/admin/users/${user.id}`}>
                   {user.name ?? "—"}
-                </Link>
-              </td>
-              <td className="py-2 text-gray-500">{user.email}</td>
-              <td className="py-2 text-gray-500">
-                {user.roles.length > 0
-                  ? user.roles.map((ur) => ur.role.name).join(", ")
-                  : "—"}
-              </td>
-            </tr>
+                </TextLink>
+              </TableCell>
+              <TableCell className="text-zinc-500">{user.email}</TableCell>
+              <TableCell>
+                {user.roles.length > 0 ? (
+                  <div className="flex flex-wrap gap-1">
+                    {user.roles.map((ur) => (
+                      <Badge key={ur.roleId} color="indigo">
+                        {ur.role.name}
+                      </Badge>
+                    ))}
+                  </div>
+                ) : (
+                  <span className="text-zinc-500">—</span>
+                )}
+              </TableCell>
+            </TableRow>
           ))}
           {users.length === 0 && (
-            <tr>
-              <td colSpan={3} className="py-6 text-center text-gray-400">
+            <TableRow>
+              <TableCell colSpan={3} className="py-6 text-center text-zinc-400">
                 No users yet.
-              </td>
-            </tr>
+              </TableCell>
+            </TableRow>
           )}
-        </tbody>
-      </table>
+        </TableBody>
+      </Table>
     </div>
   );
 }

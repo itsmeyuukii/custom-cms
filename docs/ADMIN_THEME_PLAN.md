@@ -5,7 +5,10 @@ markup repeated per page) a real shared component library and visual
 theme, styled after Catalyst (Tailwind Plus) — without redistributing
 Catalyst's licensed source.
 
-**Status: design only, nothing in this doc is implemented yet.**
+**Status: phases 1-4 done (foundation primitives, login page, admin
+shell, Roles & Users pages) — see §5. Phases 5-8 not started. This
+status line had gone stale (still said "design only") even after phases
+1-3 shipped; caught while doing phase 4.**
 
 See [PROJECT_PLAN.md](PROJECT_PLAN.md) for how this fits the rest of
 the roadmap, and [COLLECTIONS_PLAN.md](COLLECTIONS_PLAN.md) for the
@@ -163,29 +166,69 @@ changes.
 Each phase is its own branch + PR per this repo's git conventions —
 no big-bang rewrite in one commit.
 
-1. **Foundation primitives** — `button`, `input`, `textarea`,
-   `fieldset`, `text`, `link`, `badge`. No page changes yet; just the
-   building blocks landing in `src/components/ui/`.
-2. **Login page** — self-contained, single file, highest visual
-   visibility, good first real usage of the primitives.
-3. **Admin shell** — `sidebar`, `sidebar-layout`, `navbar`, `dropdown`,
-   `avatar`; replace `src/app/admin/layout.tsx` per §4. Every admin
-   page immediately looks themed even before its own content is
-   migrated, since they all render inside this shell.
-4. **Roles & Users pages** — smallest, most form/table-heavy pages;
-   introduces `table` and `dialog` (role assignment, add-role forms).
+1. ~~**Foundation primitives**~~ — **done**: `button`, `input`,
+   `textarea`, `fieldset`, `text`, `link`, `badge` landed in
+   `src/components/ui/`.
+2. ~~**Login page**~~ — **done**: `src/app/login/page.tsx` uses `Button`,
+   `Input`, and the `fieldset` primitives.
+3. ~~**Admin shell**~~ — **done**: `src/app/admin/layout.tsx` uses
+   `SidebarLayout`/`Sidebar`/`SidebarItem`/`SidebarSection`/`Navbar` per
+   §4; `dropdown`/`avatar` power the navbar's user menu.
+4. ~~**Roles & Users pages**~~ — **done**: added the two components this
+   phase actually needed —
+   [table.tsx](../src/components/ui/table.tsx) (`Table`/`TableHead`/
+   `TableBody`/`TableRow`/`TableHeader`/`TableCell`) and
+   [checkbox.tsx](../src/components/ui/checkbox.tsx) (`Checkbox`/
+   `CheckboxField`) — then migrated all 5 pages
+   (`/admin/roles`, `/admin/roles/new`, `/admin/roles/[id]`,
+   `/admin/users`, `/admin/users/[id]`) onto the full primitive set,
+   including shifting the old ad-hoc `gray-*` Tailwind classes to the
+   kit's `zinc`/`indigo` tokens (§2) for consistency. Skipped `dialog` —
+   this phase's own interactions (role assignment, permission editing)
+   are full-page forms, not modals, in the actual current pages; nothing
+   here needed one. `Badge` (anticipated for "status pills... roles" in
+   §1) turned out to fit naturally for a user's role list on
+   `/admin/users`. Pure presentation swap as required — every
+   `auth()`/`hasPermission()` check, redirect, and Server Action binding
+   is untouched.
+
+   Verified against the real database through the real rendered UI, not
+   just `tsc`: ran the dev server, logged in as admin via real NextAuth
+   credentials POSTs, fetched all 4 list/edit pages and confirmed the
+   themed markup (button/table/badge/checkbox classes) rendered with the
+   correct real data (roles, permission/user counts, per-user role
+   badges, pre-checked permission/role checkboxes matching the database).
+   Drove the real `updateRole` Server Action (extracting its actual
+   `$ACTION_1:0`/`$ACTION_1:1` fields from the new form) to add
+   `pages:publish` to Editor — permission count went 5→6 — then reverted
+   it, confirming both the mutation and the revert actually took.
+   Confirmed the viewer role still gets redirected away from
+   `/admin/roles` and `/admin/users`, matching the pre-migration
+   behavior exactly. Could not get a real browser screenshot in this
+   environment (the built-in browser can't reach a `localhost` dev
+   server, and the Claude-in-Chrome extension wasn't connected in this
+   session) — verification here is real rendered HTML/HTTP behavior, not
+   a visual check; worth an actual look in a browser before trusting the
+   visual polish completely.
+
 5. **Media page** — grid/list of uploads plus the delete action
    (`docs/PROJECT_PLAN.md` P2 item still open) — good pairing since
    that UI is being touched anyway.
 6. **Pages admin** — the page/block editor UI; highest complexity,
    done last once the primitive set has proven itself elsewhere.
-7. **Posts** — minimal-touch only (swap in `table`/`button`). Posts is
-   slated to become the first real Collection
-   ([COLLECTIONS_PLAN.md](COLLECTIONS_PLAN.md)), so it's not worth
-   deep investment in its current hand-rolled form.
-8. **Collections admin UI** — not a migration, a first build: when
-   COLLECTIONS_PLAN.md Phase 5 (`/admin/[collection]`) starts, it's
-   built directly on `src/components/ui/` from the start.
+7. **Posts** — superseded: Posts is now the Collections system's first
+   real collection ([COLLECTIONS_PLAN.md](COLLECTIONS_PLAN.md) phase 6)
+   and its admin UI is the generic `/admin/[collection]` route from
+   phase 8 below, not a standalone Posts page anymore.
+8. **Collections admin UI** — **shipped, but not on this kit**:
+   `/admin/[collection]` ([COLLECTIONS_PLAN.md](COLLECTIONS_PLAN.md)
+   phase 5) was built with plain hand-rolled Tailwind, not
+   `src/components/ui/`, deviating from this phase's explicit plan ("not
+   a migration, a first build... on `src/components/ui/` from the
+   start"). Worth a follow-up pass to bring it onto the kit — same
+   Roles/Users treatment (`Table`, `Button`, `Badge`, and a new
+   `FieldInput`-aware use of `fieldset`/`Checkbox`/`select` primitives)
+   — once prioritized.
 
 ## Open questions
 
