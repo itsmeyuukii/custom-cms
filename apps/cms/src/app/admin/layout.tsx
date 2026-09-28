@@ -30,7 +30,6 @@ export default async function AdminLayout({
           <SidebarSection>
             <SidebarItem href="/admin">Dashboard</SidebarItem>
             <SidebarItem href="/admin/pages">Pages</SidebarItem>
-            <SidebarItem href="/admin/posts">Posts</SidebarItem>
             <SidebarItem href="/admin/media">Media</SidebarItem>
             {Object.values(collectionRegistry).map((config) => (
               <SidebarItem key={config.slug} href={`/admin/${config.slug}`}>

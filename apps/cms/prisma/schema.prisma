@@ -17,7 +17,6 @@ model User {
   accounts  Account[]
   sessions  Session[]
   pages     Page[]
-  posts     Post[]
   media     Media[]
   roles     UserRole[]
   documents Document[]
@@ -129,22 +128,6 @@ model Page {
   seoDesc  String?
 
   blocks Block[]
-
-  authorId String
-  author   User   @relation(fields: [authorId], references: [id])
-
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-}
-
-model Post {
-  id          String        @id @default(cuid())
-  title       String
-  slug        String        @unique
-  excerpt     String?
-  body        String        @db.Text
-  status      ContentStatus @default(DRAFT)
-  publishedAt DateTime?
 
   authorId String
   author   User   @relation(fields: [authorId], references: [id])

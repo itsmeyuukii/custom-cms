@@ -2,12 +2,14 @@
 
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
+import type { ContentStatus } from "@prisma/client";
 import { collectionRegistry } from "@/collections/registry";
 import { parseDocumentFormData } from "@/collections/formData";
 import {
   createDocument,
   updateDocument,
   deleteDocument,
+  setDocumentStatus,
 } from "@/collections/actions";
 
 function requireConfig(collectionSlug: string) {
@@ -36,6 +38,17 @@ export async function updateDocumentAction(
   const config = requireConfig(collectionSlug);
   const input = parseDocumentFormData(config, formData);
   await updateDocument(id, input);
+
+  revalidatePath(`/admin/${collectionSlug}`);
+  revalidatePath(`/admin/${collectionSlug}/${id}`);
+}
+
+export async function setDocumentStatusAction(
+  collectionSlug: string,
+  id: string,
+  status: ContentStatus,
+) {
+  await setDocumentStatus(id, status);
 
   revalidatePath(`/admin/${collectionSlug}`);
   revalidatePath(`/admin/${collectionSlug}/${id}`);

@@ -4,7 +4,11 @@ import { auth } from "@/lib/auth";
 import { collectionRegistry } from "@/collections/registry";
 import { hasCollectionAccess } from "@/collections/access";
 import { FieldInput } from "@/collections/FieldInput";
-import { updateDocumentAction, deleteDocumentAction } from "../actions";
+import {
+  updateDocumentAction,
+  deleteDocumentAction,
+  setDocumentStatusAction,
+} from "../actions";
 
 export default async function EditDocument({
   params,
@@ -53,6 +57,25 @@ export default async function EditDocument({
           </form>
         )}
       </div>
+
+      {canUpdate && (
+        <div className="mt-2 flex gap-2">
+          {(["DRAFT", "PUBLISHED", "ARCHIVED"] as const).map((status) => (
+            <form
+              key={status}
+              action={setDocumentStatusAction.bind(null, slug, id, status)}
+            >
+              <button
+                type="submit"
+                disabled={document.status === status}
+                className="rounded border border-gray-300 px-3 py-1 text-xs disabled:opacity-40"
+              >
+                Set {status}
+              </button>
+            </form>
+          ))}
+        </div>
+      )}
 
       <form action={updateThisDocument} className="mt-6 space-y-4">
         {config.fields.map((field) => (

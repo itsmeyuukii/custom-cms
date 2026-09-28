@@ -91,7 +91,8 @@ correctly at its public URL with real data from the database.
   - `/admin` — dashboard showing who's logged in
   - `/admin/pages` — list pages, create a new one
   - `/admin/pages/[id]` — view a page, change its status, attach a Component to it as a Block (data entered as raw JSON for now — no visual form yet)
-  - `/admin/posts`, `/admin/media` — read-only placeholder lists (no create/edit UI yet)
+  - `/admin/posts` — now the generic `/admin/[collection]` Collections UI (see below); full create/edit/publish/delete
+  - `/admin/media` — read-only placeholder list (no create/edit UI yet)
 - `src/app/[slug]` — the **public** page: looks up a published Page by its URL slug and renders its Blocks
 - `src/components/blocks/` — the actual reusable components:
   - `Hero.tsx`, `CardGrid.tsx` — two example components
@@ -108,10 +109,12 @@ correctly at its public URL with real data from the database.
 
 ## 4. What's NOT done yet
 
-- Posts have no create/edit form (list only)
 - Block content is entered as raw JSON in the admin — no real visual editor
+  (Collections' `array`/`blocks` fields have the same limitation, by
+  design — see [COLLECTIONS_PLAN.md](COLLECTIONS_PLAN.md) phase 5)
 - No automated tests
-- Collections system — designed, not built (RBAC v2 shipped, see §5 item 2)
+- Collections system — phases 1-6 done, phase 7 (generic public API) not
+  started, see [COLLECTIONS_PLAN.md](COLLECTIONS_PLAN.md)
 - Branch protection not configured — CI reports status but doesn't yet block a failing merge
 - No rate limiting (login or public API)
 
@@ -302,19 +305,23 @@ permissions` server-side (not just a hidden button), confirmed via
    Its `access` config is specified in terms of RBAC v2's permission
    keys (see that doc's updated note near `CollectionConfig`), so it
    comes after item 2 for the same reason Media upload does. **In
-   progress, started 2026-09-24**: phases 1-5 done (`src/collections/types.ts`
+   progress, started 2026-09-24**: phases 1-6 done (`src/collections/types.ts`
    config shape; the `Document` Prisma model + migration verified against
    a real local database; `src/collections/validation.ts`'s config → Zod
    generator; `src/collections/registry.ts` + `actions.ts`'s generic
-   `createDocument`/`updateDocument`/`deleteDocument`; and the generic
-   admin UI at `src/app/admin/[collection]/`, `FieldInput.tsx`, and
-   `access.ts`) — each phase verified end-to-end against a real database
-   and real sessions across editor/viewer/admin, the UI phase through the
-   actual rendered forms, not just API calls — phases 6-7 (migrating
-   `Post`, the public API) not started. Once it
-   lands, the hand-written Pages/Posts API from item 1 generalizes into
-   `/api/v1/:collection` per that plan's phase 7, and Posts gets migrated
-   to be its first real collection.
+   `createDocument`/`updateDocument`/`deleteDocument`/`setDocumentStatus`;
+   the generic admin UI at `src/app/admin/[collection]/`, `FieldInput.tsx`,
+   and `access.ts`; and Posts migrated to be the first real collection —
+   `src/collections/posts.ts` registered, the old `/admin/posts` stub
+   deleted in favor of the generic UI, `/api/v1/posts` rewritten to read
+   from `Document` via a new `src/collections/serialize.ts`, and the
+   `Post` Prisma model dropped, migration `20260928044040_drop_post_model`)
+   — each phase verified end-to-end against a real database and real
+   sessions across editor/viewer/admin, phases 5-6 through the actual
+   rendered admin UI, not just API calls — phase 7 (the generic public
+   API) not started. Once it lands, `/api/v1/posts` (now itself reading
+   from `Document`) can retire in favor of the generic
+   `/api/v1/:collection` per that plan's phase 7.
 5. **Enforce Collections' `access` config** using RBAC v2's permission
    keys on both the admin UI and the REST API — one permission system,
    not two.
@@ -430,13 +437,16 @@ start — easy to reason about for a CMS-content use case, easy to `LIMIT`/
 ### Relationship to the Collections system
 
 This hand-written Pages/Posts API is intentionally a stepping stone, not
-a parallel system to maintain forever. Once
-[COLLECTIONS_PLAN.md](COLLECTIONS_PLAN.md) phase 7 lands, its generic
-`/api/v1/:collection` and `/api/v1/:collection/:slug` routes are meant to
-absorb Posts (its first real collection) — `Page` can either stay
-hand-written (it has its own Block/Component rendering concerns a generic
-collection doesn't) or become a collection itself later; that's an open
-question, not a decision made yet.
+a parallel system to maintain forever. Posts is now the Collections
+system's first real collection ([COLLECTIONS_PLAN.md](COLLECTIONS_PLAN.md)
+phase 6) — `/api/v1/posts` already reads from the generic `Document`
+table rather than a hand-written `Post` model, it just isn't the _generic_
+route yet. Once phase 7 lands, its `/api/v1/:collection` and
+`/api/v1/:collection/:slug` routes are meant to absorb it, and
+`/api/v1/posts` can retire. `Page` can either stay hand-written (it has
+its own Block/Component rendering concerns a generic collection doesn't)
+or become a collection itself later; that's an open question, not a
+decision made yet.
 
 ## 7. Known gotchas (so you don't get stuck on these again)
 
