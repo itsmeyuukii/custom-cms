@@ -6,9 +6,9 @@ config object" instead of "write a Prisma model + migration + admin pages
 
 - API route" by hand every time.
 
-**Status: phases 1-5 (config shape, `Document` model, Zod validator
-generator, generic server actions, generic admin UI) done — see §4.
-Phases 6-7 not started.**
+**Status: phases 1-6 (config shape, `Document` model, Zod validator
+generator, generic server actions, generic admin UI, Posts migrated to be
+the first real collection) done — see §4. Phase 7 not started.**
 
 Decisions locked in (see [PROJECT_PLAN.md](PROJECT_PLAN.md) for the rest of
 the project's decisions):
@@ -26,13 +26,12 @@ already does one thing well: composing a page out of reusable, positioned
 blocks (Hero, Card Grid, etc.), and it maps cleanly onto Payload's
 "Blocks" field type. It stays as-is.
 
-What's missing is everything _else_ — Posts (currently just a stub list,
-no create/edit form), and any future content type (team members, products,
-FAQs...) — each of which would otherwise need its own hand-written Prisma
-model + migration + admin pages, exactly like `Page` did. The Collections
-system replaces that hand-written path. **Posts becomes the first real
-collection** — proof that the system works, and it finally gets a create
-UI.
+What's missing is everything _else_ — Posts, and any future content type
+(team members, products, FAQs...) — each of which would otherwise need
+its own hand-written Prisma model + migration + admin pages, exactly like
+`Page` did. The Collections system replaces that hand-written path.
+**Posts is now the first real collection** (phase 6) — proof that the
+system works, and it finally has a create UI.
 
 `Media` stays a real Prisma model too (it's referenced by file storage
 concerns, not really "content").
@@ -374,9 +373,54 @@ enforced. All passed as expected.
    confirmed via a one-off script that zero `zzz-test-items` rows
    remained. Reverted the temporary registry entry before committing.
 
-6. Migrate `Post` to be the first real collection end-to-end (retire the
-   old stub `/admin/posts` page, retire the `Post` Prisma model once data
-   is migrated).
+6. ~~**Migrate `Post` to be the first real collection**~~ — **done**:
+   [src/collections/posts.ts](../src/collections/posts.ts) (the exact
+   config from §2's example) registered in `registry.ts`; the old stub
+   `src/app/admin/posts/page.tsx` deleted so `/admin/posts` now resolves
+   to the generic `/admin/[collection]` route; the hand-written
+   `/api/v1/posts` and `/api/v1/posts/[slug]` routes rewritten to query
+   `Document` (`collection: "posts"`) instead of the `Post` table,
+   through a new [src/collections/serialize.ts](../src/collections/serialize.ts)
+   (`documentToJson`) that flattens a Document's `data` back into the
+   same flat shape (`title`/`slug`/`excerpt`/`body`/`publishedAt` at the
+   top level) the old API returned — no observable change for any
+   consumer. `documentToJson` is written generically because phase 7's
+   `/api/[collection]` routes need the same flattening for every
+   collection, not just Posts. The `Post` Prisma model (and its relation
+   on `User`) is dropped — migration
+   `20260928044040_drop_post_model` — confirmed safe first: zero `Post`
+   rows existed locally (no create UI had ever shipped for it), and the
+   user confirmed none exist in production either.
+
+   **Found and fixed a real gap while doing this**: phase 5's generic
+   admin UI had no way to move a Document out of `DRAFT` — there was no
+   `setDocumentStatus`-equivalent, unlike Pages' `setPageStatus`. Posts
+   created through the new UI would otherwise be permanently invisible to
+   the public API. Added `setDocumentStatus(id, status)` to
+   `src/collections/actions.ts` (gated on `access.update`, matching how
+   `setPageStatus` uses `pages:edit` rather than a separate publish
+   permission) and wired `Set DRAFT`/`Set PUBLISHED`/`Set ARCHIVED`
+   buttons onto `/admin/[collection]/[id]`, styled and gated exactly like
+   Pages' equivalent buttons.
+
+   Verified against the real database through the real rendered UI:
+   ran the dev server, logged in as editor via real NextAuth credentials
+   POSTs, drove the real `/admin/posts/new` form as a real multipart POST
+   to create a real Post — confirmed it was DRAFT and correctly absent
+   from `/api/v1/posts` and `/api/v1/posts/hello-world` (`404`). Clicked
+   the real `Set PUBLISHED` button (its actual bound Server Action, not
+   simulated) — confirmed the status persisted and the post now appeared
+   in both REST endpoints with the exact same flat field shape the old
+   hand-written API returned. Attempted a second post with the same slug
+   and confirmed the uniqueness check rejected it. Deleted the post as
+   admin via the real rendered delete form, confirmed the edit page 404s
+   and both REST endpoints stop returning it, and confirmed via a one-off
+   script that zero `posts` Document rows remained. Also ran
+   `npx next typegen` after deleting the old stub route — its removal
+   left a stale generated route-type reference that failed `tsc` until
+   regenerated (the exact gotcha `PROJECT_PLAN.md` §7 already documents
+   for this project).
+
 7. Generic public API: `/api/[collection]` and `/api/[collection]/[slug]`,
    respecting `access.read`.
 

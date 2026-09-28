@@ -7,7 +7,7 @@
 // generic (validation shape, slug field, access keys), not the Prisma
 // call underneath.
 
-import type { Prisma } from "@prisma/client";
+import type { ContentStatus, Prisma } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 import { collectionToZod } from "./validation";
 import { getCollectionConfig } from "./registry";
@@ -94,6 +94,19 @@ export async function updateDocument(id: string, input: unknown) {
       data,
     },
   });
+}
+
+/**
+ * Gated on access.update rather than a separate publish permission,
+ * matching setPageStatus's precedent (src/app/admin/pages/actions.ts) —
+ * no collection has a real distinction between "edit" and "publish" yet.
+ */
+export async function setDocumentStatus(id: string, status: ContentStatus) {
+  const existing = await prisma.document.findUniqueOrThrow({ where: { id } });
+  const config = getCollectionConfig(existing.collection);
+  await requireCollectionAccess(config, "update");
+
+  return prisma.document.update({ where: { id }, data: { status } });
 }
 
 export async function deleteDocument(id: string) {
