@@ -324,6 +324,7 @@ enforced. All passed as expected.
    genuinely threw Prisma's `findUniqueOrThrow` not-found error rather
    than silently succeeding; and confirmed via a one-off script that zero
    `test-items` rows were left in the database afterward.
+
 5. Generic admin UI: `/admin/[collection]` list page and
    `/admin/[collection]/[id]` edit page, rendering a form generated from
    the field config (a `<FieldInput field={field} />` component with one
