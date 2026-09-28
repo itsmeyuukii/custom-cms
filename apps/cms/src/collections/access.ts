@@ -44,3 +44,23 @@ export async function requireCollectionAccess(
   }
   return session;
 }
+
+/**
+ * `access.read` has its own shape (`"public" | string[]`, not just
+ * `string[]`) since an unauthenticated public API is the common case for
+ * a collection, unlike create/update/delete. No `access.read` configured
+ * fails closed, same as the other actions.
+ */
+export async function hasReadAccess(
+  roleSlugs: string[] | undefined,
+  config: CollectionConfig,
+): Promise<boolean> {
+  const read = config.access?.read;
+  if (read === "public") return true;
+  if (!read || read.length === 0) return false;
+
+  for (const key of read) {
+    if (await hasPermission(roleSlugs, key)) return true;
+  }
+  return false;
+}

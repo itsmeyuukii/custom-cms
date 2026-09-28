@@ -113,8 +113,6 @@ correctly at its public URL with real data from the database.
   (Collections' `array`/`blocks` fields have the same limitation, by
   design — see [COLLECTIONS_PLAN.md](COLLECTIONS_PLAN.md) phase 5)
 - No automated tests
-- Collections system — phases 1-6 done, phase 7 (generic public API) not
-  started, see [COLLECTIONS_PLAN.md](COLLECTIONS_PLAN.md)
 - Branch protection not configured — CI reports status but doesn't yet block a failing merge
 - No rate limiting (login or public API)
 
@@ -301,29 +299,25 @@ permissions` server-side (not just a hidden button), confirmed via
 3. ~~**Media upload flow**~~ — **done, 2026-09-17** (all 3 phases: upload,
    admin UI, deletion). Full design in [MEDIA_PLAN.md](MEDIA_PLAN.md);
    see §3 above for what shipped and how it was verified.
-4. **Collections system** — see [COLLECTIONS_PLAN.md](COLLECTIONS_PLAN.md).
-   Its `access` config is specified in terms of RBAC v2's permission
-   keys (see that doc's updated note near `CollectionConfig`), so it
-   comes after item 2 for the same reason Media upload does. **In
-   progress, started 2026-09-24**: phases 1-6 done (`src/collections/types.ts`
-   config shape; the `Document` Prisma model + migration verified against
-   a real local database; `src/collections/validation.ts`'s config → Zod
-   generator; `src/collections/registry.ts` + `actions.ts`'s generic
-   `createDocument`/`updateDocument`/`deleteDocument`/`setDocumentStatus`;
-   the generic admin UI at `src/app/admin/[collection]/`, `FieldInput.tsx`,
-   and `access.ts`; and Posts migrated to be the first real collection —
-   `src/collections/posts.ts` registered, the old `/admin/posts` stub
-   deleted in favor of the generic UI, `/api/v1/posts` rewritten to read
-   from `Document` via a new `src/collections/serialize.ts`, and the
-   `Post` Prisma model dropped, migration `20260928044040_drop_post_model`)
-   — each phase verified end-to-end against a real database and real
-   sessions across editor/viewer/admin, phases 5-6 through the actual
-   rendered admin UI, not just API calls — phase 7 (the generic public
-   API) not started. Once it lands, `/api/v1/posts` (now itself reading
-   from `Document`) can retire in favor of the generic
-   `/api/v1/:collection` per that plan's phase 7.
-5. **Enforce Collections' `access` config** using RBAC v2's permission
-   keys on both the admin UI and the REST API — one permission system,
+4. ~~**Collections system**~~ — **done, 2026-09-28** (started
+   2026-09-24). Full design and phase-by-phase build/verification notes
+   in [COLLECTIONS_PLAN.md](COLLECTIONS_PLAN.md): the config shape
+   (`src/collections/types.ts`), the `Document` Prisma model, a config →
+   Zod validator generator, generic
+   `createDocument`/`updateDocument`/`deleteDocument`/`setDocumentStatus`
+   server actions, a generic `/admin/[collection]` admin UI, Posts
+   migrated to be the first real collection (the `Post` Prisma model is
+   gone), and a generic public API at `/api/v1/[collection]` /
+   `/api/v1/[collection]/[slug]` that absorbed the old hand-written
+   `/api/v1/posts` routes. Every phase was verified end-to-end against a
+   real database, not just `tsc` — the admin UI and API phases through
+   real rendered forms and real HTTP requests across editor/viewer/admin
+   sessions.
+5. ~~**Enforce Collections' `access` config**~~ — **done**, as part of
+   item 4: `src/collections/access.ts`'s `hasCollectionAccess`/
+   `requireCollectionAccess`/`hasReadAccess` are the single
+   implementation the generic server actions, the admin UI, and the
+   public API all check against — RBAC v2's permission keys, one system,
    not two.
 
 ### P3 — polish & operations (once the above is stable)
@@ -379,13 +373,16 @@ model rather than the `WRITE_ROLES` enum this API doesn't otherwise need.
 ### Routes
 
 Implemented as Next.js Route Handlers, versioned from day one so a future
-breaking change doesn't disturb existing consumers:
+breaking change doesn't disturb existing consumers. This was the original
+shape; the Posts routes were later absorbed into the generic
+`/api/v1/[collection]` routes — see "Relationship to the Collections
+system" below for the current state:
 
 ```
 src/app/api/v1/pages/route.ts          GET  — list published pages
 src/app/api/v1/pages/[slug]/route.ts   GET  — one published page, blocks resolved
-src/app/api/v1/posts/route.ts          GET  — list published posts
-src/app/api/v1/posts/[slug]/route.ts   GET  — one published post
+src/app/api/v1/posts/route.ts          GET  — list published posts (superseded — see below)
+src/app/api/v1/posts/[slug]/route.ts   GET  — one published post (superseded — see below)
 ```
 
 Both `[slug]` handlers reuse the exact same Prisma query already written
@@ -436,17 +433,16 @@ start — easy to reason about for a CMS-content use case, easy to `LIMIT`/
 
 ### Relationship to the Collections system
 
-This hand-written Pages/Posts API is intentionally a stepping stone, not
-a parallel system to maintain forever. Posts is now the Collections
-system's first real collection ([COLLECTIONS_PLAN.md](COLLECTIONS_PLAN.md)
-phase 6) — `/api/v1/posts` already reads from the generic `Document`
-table rather than a hand-written `Post` model, it just isn't the _generic_
-route yet. Once phase 7 lands, its `/api/v1/:collection` and
-`/api/v1/:collection/:slug` routes are meant to absorb it, and
-`/api/v1/posts` can retire. `Page` can either stay hand-written (it has
-its own Block/Component rendering concerns a generic collection doesn't)
-or become a collection itself later; that's an open question, not a
-decision made yet.
+This section describes the original hand-written Pages/Posts API design.
+That stepping stone is now half-retired: Posts is the Collections
+system's first real collection
+([COLLECTIONS_PLAN.md](COLLECTIONS_PLAN.md) phases 6-7), and its
+hand-written `/api/v1/posts`/`/api/v1/posts/[slug]` routes are gone,
+absorbed into the generic `/api/v1/[collection]` /
+`/api/v1/[collection]/[slug]` routes every collection now shares. `Page`
+stays hand-written for now (it has its own Block/Component rendering
+concerns a generic collection doesn't) — whether it becomes a collection
+itself later is still an open question, not a decision made.
 
 ## 7. Known gotchas (so you don't get stuck on these again)
 
