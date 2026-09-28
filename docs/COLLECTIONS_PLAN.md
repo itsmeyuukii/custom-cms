@@ -6,8 +6,8 @@ config object" instead of "write a Prisma model + migration + admin pages
 
 - API route" by hand every time.
 
-**Status: phases 1-2 (config shape, `Document` model) done 2026-09-24 —
-see §4. Phases 3-7 not started.**
+**Status: phases 1-3 (config shape, `Document` model, Zod validator
+generator) done — see §4. Phases 4-7 not started.**
 
 Decisions locked in (see [PROJECT_PLAN.md](PROJECT_PLAN.md) for the rest of
 the project's decisions):
@@ -228,6 +228,42 @@ Recommendation: generate a [Zod](https://zod.dev) schema from a
 collection. This is the same idea as the config driving everything else —
 write the mapping once, every new collection gets validation for free.
 
+**Done**: [src/collections/validation.ts](../src/collections/validation.ts)
+(`zod` `^4.6.5`) — `fieldToZod(field)` maps every `FieldType`, and
+`collectionToZod(config)` composes a `CollectionConfig`'s fields into one
+object schema. Notes on choices made translating the config shape into
+Zod:
+
+- `text`/`textarea`/`richText` → `z.string()` with `minLength`/`maxLength`
+  as `.min()`/`.max()`; a `required` field with no explicit `minLength`
+  gets `.min(1)` so an empty string doesn't satisfy "required".
+- `date` → `z.string()` refined against `Date.parse` (not `z.coerce.date()`
+  — a `Date` object isn't valid JSON and Prisma's `Json` field needs
+  plain JSON-serializable values, so the stored/validated shape is an
+  ISO string throughout).
+- `select`/`relationship` → validated structurally (`select` against its
+  `options`' values; `relationship` as a string id, or array if `many`) —
+  neither confirms a relationship's target actually exists, since that
+  needs a DB lookup, not schema validation (left for phase 4).
+- `array`/`blocks` → recursive: `array` reuses the same field-list → Zod
+  object builder for its `fields`; `blocks` validates
+  `{ component: string, data: unknown }[]`, restricting `component` to
+  `allow` when set. Each block's `data` isn't validated against its
+  Component's own JSON Schema here — that's a separate, existing
+  validation system (`Component.schema`), out of scope for this
+  generator.
+- `unique` is **not** enforced by this schema — it needs a query against
+  existing `Document` rows, done at write time (phase 4), not structural
+  validation.
+
+Verified with a temporary script (`src/collections/_test-validation.ts`,
+deleted after) run via `npx tsx`, covering both the plan's `posts` example
+and a second config exercising every field type: valid data parses,
+a missing required field fails, an invalid date string fails, omitted
+optional fields still pass, an out-of-`options` select value fails, a
+`blocks` entry outside `allow` fails, and a `number` field's `min` is
+enforced. All passed as expected.
+
 ## 4. Phased build order
 
 1. ~~**This config shape**~~ (`src/collections/types.ts`) — **done,
@@ -242,7 +278,9 @@ write the mapping once, every new collection gets validation for free.
    actually rejected by the constraint (not just assumed from the
    schema), then deleted it and confirmed the delete took. No app code
    reads/writes `Document` yet — that's phase 4.
-3. Config → Zod validator generator.
+3. ~~**Config → Zod validator generator**~~ — **done**:
+   [src/collections/validation.ts](../src/collections/validation.ts), see
+   §3 above for what shipped and how it was verified.
 4. Generic server actions: `createDocument(collectionSlug, data)`,
    `updateDocument`, etc. — validate against the collection config, then
    write to `Document`.
