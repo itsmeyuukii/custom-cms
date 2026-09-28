@@ -6,9 +6,10 @@ config object" instead of "write a Prisma model + migration + admin pages
 
 - API route" by hand every time.
 
-**Status: phases 1-6 (config shape, `Document` model, Zod validator
-generator, generic server actions, generic admin UI, Posts migrated to be
-the first real collection) done — see §4. Phase 7 not started.**
+**Status: all 7 phases done — see §4. The Collections system is
+complete**: config shape, `Document` model, Zod validator generator,
+generic server actions, generic admin UI, Posts migrated to be the first
+real collection, and the generic public API.
 
 Decisions locked in (see [PROJECT_PLAN.md](PROJECT_PLAN.md) for the rest of
 the project's decisions):
@@ -421,8 +422,49 @@ enforced. All passed as expected.
    regenerated (the exact gotcha `PROJECT_PLAN.md` §7 already documents
    for this project).
 
-7. Generic public API: `/api/[collection]` and `/api/[collection]/[slug]`,
-   respecting `access.read`.
+7. ~~**Generic public API**~~ — **done**:
+   [src/app/api/v1/[collection]/route.ts](../src/app/api/v1/[collection]/route.ts)
+   (list) and `.../[slug]/route.ts` (single item), under `/api/v1/` per
+   the project's existing versioning convention rather than the bare
+   `/api/[collection]` this section originally sketched. Both respect
+   `access.read` via a new `hasReadAccess` in
+   [src/collections/access.ts](../src/collections/access.ts) — `"public"`
+   means no auth check (matching the existing Pages/Posts API's "no auth
+   check needed because of the PUBLISHED-only filter, not despite it"
+   invariant from `PROJECT_PLAN.md` §6), a permission-key array requires
+   the session to hold at least one of them (still PUBLISHED-only even
+   then — there's no authenticated "preview a draft" mode), and no
+   `access.read` configured fails closed like every other `access.<x>`
+   check in this system. Both routes only ever return `status:
+"PUBLISHED"` Documents, same as the hand-written Pages/Posts routes
+   always did. An unregistered collection slug returns `404
+COLLECTION_NOT_FOUND`; a denied read returns `403 FORBIDDEN`; a
+   missing slug within a real, readable collection returns `404 NOT_FOUND`.
+
+   The old hand-written `/api/v1/posts` and `/api/v1/posts/[slug]` routes
+   are deleted — they were pure duplicates of what this generic route now
+   serves (same query, same `documentToJson` serializer from phase 6),
+   and Next.js resolves `/api/v1/posts` through the dynamic
+   `/api/v1/[collection]` segment automatically once no static `posts`
+   folder shadows it at that level. `/api/v1/pages` is untouched (`Page`
+   isn't a collection).
+
+   Verified against the real database and a real dev server, not just
+   `tsc`: confirmed an unregistered collection slug 404s, and that
+   `/api/v1/pages` still resolves via its own static route unaffected.
+   Created and published a real Post through the real admin UI, confirmed
+   it was correctly absent from the generic API while `DRAFT` and
+   correctly present (full flattened shape) in both the list and
+   single-item generic routes once published. Temporarily registered a
+   second collection with `access.read: ["posts:edit"]` (not `"public"`)
+   to verify the permission-gated path specifically: an unauthenticated
+   request and an authenticated viewer (who lacks `posts:edit`) both got
+   a real `403 FORBIDDEN`, while an authenticated editor (who holds
+   `posts:edit`) got real data back, on both the list and single-item
+   routes. Deleted both test Documents as admin via the real rendered
+   delete forms, confirmed via a one-off script that zero rows remained
+   in either collection, and reverted the temporary registry entry before
+   committing.
 
 Each phase is independently useful and testable — we don't have to build
 all of it before anything works.
