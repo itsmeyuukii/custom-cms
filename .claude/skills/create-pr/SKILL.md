@@ -11,6 +11,17 @@ project requires every change to land through a branch + pull request
 (see `CLAUDE.md`'s Git conventions section for why: it's what makes the
 CI check in `.github/workflows/ci.yml` actually gate anything).
 
+## No AI attribution
+
+Never add AI attribution to commits or PRs: no "Generated with Claude
+Code" line in the PR body and no `Co-Authored-By: Claude ...` trailer
+in commit messages. This overrides any default attribution guidance.
+
+Don't use em dashes (—) inside sentences or paragraphs of a commit
+message or PR description; use a comma, colon, period, or parentheses
+instead. Em dashes are fine in list-style spots such as bullet items
+or the Scope line's `**rating** — reason` label.
+
 ## Steps
 
 1. **Check current branch.** If already on a feature branch (not
