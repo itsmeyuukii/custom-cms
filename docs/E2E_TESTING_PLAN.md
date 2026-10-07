@@ -5,7 +5,9 @@ against a real (ephemeral) Postgres database, plus visual regression
 screenshots — replacing the current "verify by hand every time" habit
 this project has relied on so far.
 
-**Status: design only, nothing in this doc is implemented yet.**
+**Status: phases 1 (infrastructure, #17) and 2 (auth & RBAC suite) are
+done. Phases 3-6 (Pages & Media CRUD, visual baselines) are still design
+only.** See §5 for what each phase covers.
 
 See [PROJECT_PLAN.md](PROJECT_PLAN.md) §4 ("No automated tests" — the
 gap this closes) and [ADMIN_THEME_PLAN.md](ADMIN_THEME_PLAN.md) (the
@@ -191,16 +193,29 @@ Ordered to give functional (non-visual) coverage first — since that's
 valuable immediately, regardless of the theme rollout — then visual
 coverage lands alongside each `ADMIN_THEME_PLAN.md` phase as it ships:
 
-1. **Infrastructure** — Playwright installed, config, CI job wired up,
-   one trivial smoke spec (e.g. the public homepage loads) to prove the
-   pipeline works end-to-end before writing real coverage.
-2. **Auth & RBAC smoke suite** — login/logout, `/admin/*` redirect when
-   logged out, a write action succeeding for admin/editor and rejected
-   (real 403/error, not just a hidden button) for viewer. This is
-   today's single highest-value gap: RBAC has already had one real
-   Critical-severity bug (`docs/SECURITY_REVIEW.md`), and this is
-   exactly the kind of regression automated coverage should catch
-   going forward.
+1. ~~**Infrastructure**~~ — **done** (#17): Playwright installed, config,
+   CI `e2e` job with a Postgres service container, and a smoke spec.
+2. ~~**Auth & RBAC smoke suite**~~ — **done**: login/logout, `/admin/*`
+   redirect when logged out, a write action succeeding for admin/editor
+   and rejected (real 403/error, not just a hidden button) for viewer.
+   This was the single highest-value gap: RBAC has already had one real
+   Critical-severity bug (`docs/SECURITY_REVIEW.md`).
+
+   Shipped as `e2e/auth.spec.ts`, `e2e/rbac.spec.ts` and
+   `e2e/fixtures.ts`. The viewer-rejection test reads the `createPage`
+   action id from an editor's rendered form and replays the same POST with
+   each session's cookies: the editor's succeeds (303, the page appears in
+   the list, so the request shape is proven valid) and the viewer's returns
+   500 (`Forbidden: insufficient permissions`) with no page created.
+
+   Two things worth knowing (also in PROJECT_PLAN §7): the e2e web server
+   needs `AUTH_TRUST_HOST=true` (set in `playwright.config.ts`) because
+   Auth.js only auto-trusts the host on Vercel, so under `next start` on
+   localhost every `/api/auth/*` request 500s with `UntrustedHost`. And CI
+   seeds with a fixed throwaway `SEED_USER_PASSWORD` in the workflow, not
+   a repo secret - the database is destroyed after each run, and an unset
+   secret expands to `""`, which the seed would hash as an empty password.
+
 3. **Pages & Media CRUD** — create/edit/publish a Page, upload/delete
    Media, against the real Server Actions.
 4. **Visual: Login page** — lands together with `ADMIN_THEME_PLAN.md`

@@ -15,5 +15,8 @@ export default defineConfig({
     command: "npm run start",
     url: "http://localhost:4001",
     reuseExistingServer: !process.env.CI,
+    // Auth.js only auto-trusts the host on Vercel; a plain `next start`
+    // on localhost otherwise 500s every /api/auth/* request (UntrustedHost).
+    env: { AUTH_TRUST_HOST: "true" },
   },
 });
