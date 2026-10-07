@@ -1,9 +1,20 @@
 import { notFound } from "next/navigation";
-import Link from "next/link";
 import { prisma } from "@/lib/prisma";
 import { auth } from "@/lib/auth";
 import { hasPermission } from "@/lib/rbac";
+import { Button } from "@/components/ui/button";
+import { Textarea } from "@/components/ui/textarea";
+import { Select } from "@/components/ui/select";
+import { Field, FieldGroup, Label } from "@/components/ui/fieldset";
+import { Badge } from "@/components/ui/badge";
+import { Text, TextLink } from "@/components/ui/text";
 import { addBlock, setPageStatus } from "../actions";
+
+const statusColors = {
+  DRAFT: "yellow",
+  PUBLISHED: "green",
+  ARCHIVED: "zinc",
+} as const;
 
 export default async function EditPage({
   params,
@@ -32,94 +43,97 @@ export default async function EditPage({
   return (
     <div className="max-w-2xl">
       <div>
-        <h1 className="text-2xl font-semibold">{page.title}</h1>
-        <p className="text-sm text-gray-500">
-          /{page.slug} · <span className="font-medium">{page.status}</span>
-        </p>
+        <h1 className="text-2xl font-semibold text-zinc-900">{page.title}</h1>
+        <Text>
+          /{page.slug}{" "}
+          <Badge className="ml-1" color={statusColors[page.status]}>
+            {page.status}
+          </Badge>
+        </Text>
       </div>
 
       {canWrite && (
-        <div className="mt-2 flex gap-2">
+        <div className="mt-4 flex gap-2">
           {(["DRAFT", "PUBLISHED", "ARCHIVED"] as const).map((status) => (
             <form
               key={status}
               action={setPageStatus.bind(null, page.id, status)}
             >
-              <button
+              <Button
                 type="submit"
+                variant="secondary"
                 disabled={page.status === status}
-                className="rounded border border-gray-300 px-3 py-1 text-xs disabled:opacity-40"
               >
                 Set {status}
-              </button>
+              </Button>
             </form>
           ))}
         </div>
       )}
 
-      <h2 className="mt-8 font-semibold">Blocks</h2>
+      <h2 className="mt-8 font-semibold text-zinc-900">Blocks</h2>
       <ul className="mt-2 space-y-2">
         {page.blocks.map((block) => (
           <li
             key={block.id}
-            className="rounded border border-gray-200 p-3 text-sm"
+            className="rounded-lg border border-zinc-200 p-3 text-sm"
           >
-            <span className="font-medium">{block.component.name}</span>
-            <pre className="mt-1 overflow-x-auto text-xs text-gray-500">
+            <span className="font-medium text-zinc-900">
+              {block.component.name}
+            </span>
+            <pre className="mt-1 overflow-x-auto text-xs text-zinc-500">
               {JSON.stringify(block.data, null, 2)}
             </pre>
           </li>
         ))}
         {page.blocks.length === 0 && (
-          <li className="text-sm text-gray-400">No blocks yet.</li>
+          <li>
+            <Text className="text-zinc-400">No blocks yet.</Text>
+          </li>
         )}
       </ul>
 
       {canWrite && (
         <>
-          <h2 className="mt-8 font-semibold">Add Block</h2>
-          <form action={addBlockToPage} className="mt-2 space-y-3">
-            <div>
-              <label className="block text-sm font-medium">Component</label>
-              <select
-                name="componentId"
-                required
-                className="mt-1 w-full rounded border border-gray-300 px-3 py-2"
-              >
-                {components.map((c) => (
-                  <option key={c.id} value={c.id}>
-                    {c.name}
-                  </option>
-                ))}
-              </select>
-            </div>
-            <div>
-              <label className="block text-sm font-medium">Data (JSON)</label>
-              <textarea
-                name="data"
-                rows={5}
-                defaultValue="{}"
-                className="mt-1 w-full rounded border border-gray-300 px-3 py-2 font-mono text-xs"
-              />
-            </div>
-            <button
-              type="submit"
-              className="rounded bg-black px-4 py-2 text-sm text-white"
-            >
+          <h2 className="mt-8 font-semibold text-zinc-900">Add Block</h2>
+          <form action={addBlockToPage} className="mt-2">
+            <FieldGroup>
+              <Field>
+                <Label htmlFor="componentId">Component</Label>
+                <Select id="componentId" name="componentId" required>
+                  {components.map((c) => (
+                    <option key={c.id} value={c.id}>
+                      {c.name}
+                    </option>
+                  ))}
+                </Select>
+              </Field>
+              <Field>
+                <Label htmlFor="data">Data (JSON)</Label>
+                <Textarea
+                  id="data"
+                  name="data"
+                  rows={5}
+                  defaultValue="{}"
+                  className="font-mono text-xs"
+                />
+              </Field>
+            </FieldGroup>
+            <Button type="submit" className="mt-4">
               Add Block
-            </button>
+            </Button>
           </form>
         </>
       )}
 
       {page.status === "PUBLISHED" && (
-        <Link
+        <TextLink
           href={`/${page.slug}`}
           target="_blank"
-          className="mt-6 inline-block text-sm text-blue-600 hover:underline"
+          className="mt-6 inline-block text-sm"
         >
           View live →
-        </Link>
+        </TextLink>
       )}
     </div>
   );

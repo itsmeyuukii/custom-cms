@@ -5,10 +5,10 @@ markup repeated per page) a real shared component library and visual
 theme, styled after Catalyst (Tailwind Plus) — without redistributing
 Catalyst's licensed source.
 
-**Status: phases 1-4 done (foundation primitives, login page, admin
-shell, Roles & Users pages) — see §5. Phases 5-8 not started. This
-status line had gone stale (still said "design only") even after phases
-1-3 shipped; caught while doing phase 4.**
+**Status: phases 1-6 done (foundation primitives, login page, admin
+shell, Roles & Users pages, Media page, Pages admin) — see §5. Phase 7
+is superseded and phase 8 (Collections admin UI) is the only remaining
+work.**
 
 See [PROJECT_PLAN.md](PROJECT_PLAN.md) for how this fits the rest of
 the roadmap, and [COLLECTIONS_PLAN.md](COLLECTIONS_PLAN.md) for the
@@ -211,11 +211,30 @@ no big-bang rewrite in one commit.
    a visual check; worth an actual look in a browser before trusting the
    visual polish completely.
 
-5. **Media page** — grid/list of uploads plus the delete action
+5. ~~**Media page**~~ — **done** (#32): grid/list of uploads plus the delete action
    (`docs/PROJECT_PLAN.md` P2 item still open) — good pairing since
    that UI is being touched anyway.
-6. **Pages admin** — the page/block editor UI; highest complexity,
-   done last once the primitive set has proven itself elsewhere.
+6. ~~**Pages admin**~~ — **done**: `/admin/pages`, `/admin/pages/new`, and
+   `/admin/pages/[id]` migrated onto `Table`/`Badge`/`Button`/`ButtonLink`/
+   `Input`/`Textarea`/`fieldset`, plus one new primitive,
+   [select.tsx](../apps/cms/src/components/ui/select.tsx) (a styled native
+   `<select>`, same `invalid` ring treatment as `Input`, for the "Add
+   Block" component picker). Page status now renders as a `Badge`
+   (DRAFT yellow, PUBLISHED green, ARCHIVED zinc) in both the list and
+   the detail header. The block editor itself is unchanged (still raw
+   JSON, per PROJECT_PLAN §4) — this phase is a pure presentation swap;
+   every `auth()`/`hasPermission()` check and Server Action binding is
+   untouched. Verified against the real database through the real UI:
+   logged in as admin and viewer via real NextAuth credentials POSTs,
+   confirmed the themed list/new/detail markup and that viewer sees no
+   "New Page" link or write controls (and is redirected from
+   `/admin/pages/new`); created a temporary page through the real
+   `createPage` action, then drove the real bound `setPageStatus` and
+   `addBlock` actions (extracted `$ACTION_n:0`/`:1` fields from the
+   rendered forms) — status flipped to PUBLISHED, the public
+   `/zz-theme-test` route returned 200, and the new block rendered.
+   Temp page and blocks deleted afterward. As with phase 4, no real
+   browser screenshot was possible here, so visual polish is unchecked.
 7. **Posts** — superseded: Posts is now the Collections system's first
    real collection ([COLLECTIONS_PLAN.md](COLLECTIONS_PLAN.md) phase 6)
    and its admin UI is the generic `/admin/[collection]` route from

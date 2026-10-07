@@ -1,7 +1,23 @@
-import Link from "next/link";
 import { prisma } from "@/lib/prisma";
 import { auth } from "@/lib/auth";
 import { hasPermission } from "@/lib/rbac";
+import { ButtonLink } from "@/components/ui/button";
+import { TextLink } from "@/components/ui/text";
+import { Badge } from "@/components/ui/badge";
+import {
+  Table,
+  TableHead,
+  TableBody,
+  TableRow,
+  TableHeader,
+  TableCell,
+} from "@/components/ui/table";
+
+const statusColors = {
+  DRAFT: "yellow",
+  PUBLISHED: "green",
+  ARCHIVED: "zinc",
+} as const;
 
 export default async function AdminPagesList() {
   const [pages, session] = await Promise.all([
@@ -16,53 +32,45 @@ export default async function AdminPagesList() {
   return (
     <div>
       <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-semibold">Pages</h1>
-        {canWrite && (
-          <Link
-            href="/admin/pages/new"
-            className="rounded bg-black px-4 py-2 text-sm text-white"
-          >
-            New Page
-          </Link>
-        )}
+        <h1 className="text-2xl font-semibold text-zinc-900">Pages</h1>
+        {canWrite && <ButtonLink href="/admin/pages/new">New Page</ButtonLink>}
       </div>
 
-      <table className="mt-6 w-full text-left text-sm">
-        <thead>
-          <tr className="border-b border-gray-200 text-gray-500">
-            <th className="py-2">Title</th>
-            <th className="py-2">Slug</th>
-            <th className="py-2">Status</th>
-            <th className="py-2">Updated</th>
-          </tr>
-        </thead>
-        <tbody>
+      <Table className="mt-6">
+        <TableHead>
+          <TableRow header>
+            <TableHeader>Title</TableHeader>
+            <TableHeader>Slug</TableHeader>
+            <TableHeader>Status</TableHeader>
+            <TableHeader>Updated</TableHeader>
+          </TableRow>
+        </TableHead>
+        <TableBody>
           {pages.map((page) => (
-            <tr key={page.id} className="border-b border-gray-100">
-              <td className="py-2">
-                <Link
-                  href={`/admin/pages/${page.id}`}
-                  className="hover:underline"
-                >
+            <TableRow key={page.id}>
+              <TableCell>
+                <TextLink href={`/admin/pages/${page.id}`}>
                   {page.title}
-                </Link>
-              </td>
-              <td className="py-2 text-gray-500">/{page.slug}</td>
-              <td className="py-2">{page.status}</td>
-              <td className="py-2 text-gray-500">
+                </TextLink>
+              </TableCell>
+              <TableCell className="text-zinc-500">/{page.slug}</TableCell>
+              <TableCell>
+                <Badge color={statusColors[page.status]}>{page.status}</Badge>
+              </TableCell>
+              <TableCell className="text-zinc-500">
                 {page.updatedAt.toLocaleDateString()}
-              </td>
-            </tr>
+              </TableCell>
+            </TableRow>
           ))}
           {pages.length === 0 && (
-            <tr>
-              <td colSpan={4} className="py-6 text-center text-gray-400">
+            <TableRow>
+              <TableCell colSpan={4} className="py-6 text-center text-zinc-400">
                 No pages yet.
-              </td>
-            </tr>
+              </TableCell>
+            </TableRow>
           )}
-        </tbody>
-      </table>
+        </TableBody>
+      </Table>
     </div>
   );
 }

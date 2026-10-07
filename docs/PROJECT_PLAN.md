@@ -132,8 +132,9 @@ default sequence, not a locked contract.
 2. ~~RBAC v2~~ — done, 2026-09-16. Full design in [RBAC_PLAN.md](RBAC_PLAN.md)
 3. ~~Media upload~~ — done, 2026-09-17 (upload + deletion)
 4. Admin UI theme (component library) — see [ADMIN_THEME_PLAN.md](ADMIN_THEME_PLAN.md).
-   **Phases 1-4 done** (foundation primitives, login, admin shell,
-   Roles & Users pages) — phases 5-8 not started. Collections Phase 5
+   **Phases 1-6 done** (foundation primitives, login, admin shell,
+   Roles & Users, Media, Pages) — only phase 8 (Collections admin UI)
+   remains. Collections Phase 5
    (the generic admin UI) landed before this reached it, so it did
    _not_ get built on this component library as originally intended —
    flagged as a follow-up in `ADMIN_THEME_PLAN.md` phase 8.
