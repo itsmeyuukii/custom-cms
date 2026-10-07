@@ -1,9 +1,25 @@
-import Link from "next/link";
 import { notFound } from "next/navigation";
 import { prisma } from "@/lib/prisma";
 import { auth } from "@/lib/auth";
 import { collectionRegistry } from "@/collections/registry";
 import { hasCollectionAccess } from "@/collections/access";
+import { ButtonLink } from "@/components/ui/button";
+import { TextLink } from "@/components/ui/text";
+import { Badge } from "@/components/ui/badge";
+import {
+  Table,
+  TableHead,
+  TableBody,
+  TableRow,
+  TableHeader,
+  TableCell,
+} from "@/components/ui/table";
+
+const statusColors = {
+  DRAFT: "yellow",
+  PUBLISHED: "green",
+  ARCHIVED: "zinc",
+} as const;
 
 export default async function CollectionList({
   params,
@@ -34,51 +50,49 @@ export default async function CollectionList({
   return (
     <div>
       <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-semibold">{labelPlural}</h1>
+        <h1 className="text-2xl font-semibold text-zinc-900">{labelPlural}</h1>
         {canCreate && (
-          <Link
-            href={`/admin/${slug}/new`}
-            className="rounded bg-black px-4 py-2 text-sm text-white"
-          >
+          <ButtonLink href={`/admin/${slug}/new`}>
             New {config.label}
-          </Link>
+          </ButtonLink>
         )}
       </div>
 
-      <table className="mt-6 w-full text-left text-sm">
-        <thead>
-          <tr className="border-b border-gray-200 text-gray-500">
-            <th className="py-2">{config.slugField ? "Slug" : "ID"}</th>
-            <th className="py-2">Status</th>
-            <th className="py-2">Updated</th>
-          </tr>
-        </thead>
-        <tbody>
+      <Table className="mt-6">
+        <TableHead>
+          <TableRow header>
+            <TableHeader>{config.slugField ? "Slug" : "ID"}</TableHeader>
+            <TableHeader>Status</TableHeader>
+            <TableHeader>Updated</TableHeader>
+          </TableRow>
+        </TableHead>
+        <TableBody>
           {documents.map((document) => (
-            <tr key={document.id} className="border-b border-gray-100">
-              <td className="py-2">
-                <Link
-                  href={`/admin/${slug}/${document.id}`}
-                  className="hover:underline"
-                >
+            <TableRow key={document.id}>
+              <TableCell>
+                <TextLink href={`/admin/${slug}/${document.id}`}>
                   {document.slug ?? document.id}
-                </Link>
-              </td>
-              <td className="py-2">{document.status}</td>
-              <td className="py-2 text-gray-500">
+                </TextLink>
+              </TableCell>
+              <TableCell>
+                <Badge color={statusColors[document.status]}>
+                  {document.status}
+                </Badge>
+              </TableCell>
+              <TableCell className="text-zinc-500">
                 {document.updatedAt.toLocaleDateString()}
-              </td>
-            </tr>
+              </TableCell>
+            </TableRow>
           ))}
           {documents.length === 0 && (
-            <tr>
-              <td colSpan={3} className="py-6 text-center text-gray-400">
+            <TableRow>
+              <TableCell colSpan={3} className="py-6 text-center text-zinc-400">
                 No {labelPlural.toLowerCase()} yet.
-              </td>
-            </tr>
+              </TableCell>
+            </TableRow>
           )}
-        </tbody>
-      </table>
+        </TableBody>
+      </Table>
     </div>
   );
 }

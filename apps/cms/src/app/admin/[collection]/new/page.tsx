@@ -3,6 +3,8 @@ import { auth } from "@/lib/auth";
 import { collectionRegistry } from "@/collections/registry";
 import { hasCollectionAccess } from "@/collections/access";
 import { FieldInput } from "@/collections/FieldInput";
+import { Button } from "@/components/ui/button";
+import { FieldGroup } from "@/components/ui/fieldset";
 import { createDocumentAction } from "../actions";
 
 export default async function NewDocument({
@@ -27,17 +29,18 @@ export default async function NewDocument({
 
   return (
     <div className="max-w-2xl">
-      <h1 className="text-2xl font-semibold">New {config.label}</h1>
-      <form action={createThisDocument} className="mt-6 space-y-4">
-        {config.fields.map((field) => (
-          <FieldInput key={field.name} field={field} />
-        ))}
-        <button
-          type="submit"
-          className="rounded bg-black px-4 py-2 text-sm text-white"
-        >
+      <h1 className="text-2xl font-semibold text-zinc-900">
+        New {config.label}
+      </h1>
+      <form action={createThisDocument} className="mt-6">
+        <FieldGroup>
+          {config.fields.map((field) => (
+            <FieldInput key={field.name} field={field} />
+          ))}
+        </FieldGroup>
+        <Button type="submit" className="mt-6">
           Create
-        </button>
+        </Button>
       </form>
     </div>
   );

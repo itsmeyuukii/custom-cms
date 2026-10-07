@@ -1,10 +1,16 @@
 // Renders one form control per FieldType (docs/COLLECTIONS_PLAN.md §4
-// phase 5). `array`/`blocks` render as raw JSON textareas rather than a
-// dynamic add/remove UI — matching the project's existing precedent of
-// entering Block data as raw JSON (see src/app/admin/pages/[id]/page.tsx)
-// until a real visual editor exists for either.
+// phase 5), built on the shared UI kit in src/components/ui/. `array`/
+// `blocks` render as raw JSON textareas rather than a dynamic add/remove
+// UI, matching the project's existing precedent of entering Block data as
+// raw JSON (see src/app/admin/pages/[id]/page.tsx) until a real visual
+// editor exists for either.
 
 import type { Field } from "./types";
+import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
+import { Select } from "@/components/ui/select";
+import { Checkbox, CheckboxField } from "@/components/ui/checkbox";
+import { Field as FormField, Label } from "@/components/ui/fieldset";
 
 function titleCase(name: string): string {
   return name
@@ -17,9 +23,7 @@ function toDateInputValue(value: unknown): string {
   return typeof value === "string" ? value.slice(0, 10) : "";
 }
 
-const inputClass =
-  "mt-1 w-full rounded border border-gray-300 px-3 py-2 disabled:bg-gray-50 disabled:text-gray-500";
-const monoInputClass = `${inputClass} font-mono text-xs`;
+const monoClass = "font-mono text-xs";
 
 export function FieldInput({
   field,
@@ -32,18 +36,31 @@ export function FieldInput({
 }) {
   const label = field.label ?? titleCase(field.name);
 
+  if (field.type === "boolean") {
+    return (
+      <CheckboxField>
+        <Checkbox
+          name={field.name}
+          defaultChecked={defaultValue === true}
+          disabled={disabled}
+        />
+        {label}
+      </CheckboxField>
+    );
+  }
+
   return (
-    <div>
-      <label className="block text-sm font-medium">
+    <FormField>
+      <Label htmlFor={field.name}>
         {label}
         {field.required && <span className="text-red-500"> *</span>}
-      </label>
+      </Label>
       <FieldControl
         field={field}
         defaultValue={defaultValue}
         disabled={disabled}
       />
-    </div>
+    </FormField>
   );
 }
 
@@ -52,37 +69,38 @@ function FieldControl({
   defaultValue,
   disabled,
 }: {
-  field: Field;
+  field: Exclude<Field, { type: "boolean" }>;
   defaultValue: unknown;
   disabled: boolean;
 }) {
   switch (field.type) {
     case "text":
       return (
-        <input
+        <Input
+          id={field.name}
           type="text"
           name={field.name}
           defaultValue={typeof defaultValue === "string" ? defaultValue : ""}
           required={field.required}
           disabled={disabled}
-          className={inputClass}
         />
       );
     case "textarea":
     case "richText":
       return (
-        <textarea
+        <Textarea
+          id={field.name}
           name={field.name}
           defaultValue={typeof defaultValue === "string" ? defaultValue : ""}
           required={field.required}
           disabled={disabled}
           rows={field.type === "richText" ? 8 : 3}
-          className={inputClass}
         />
       );
     case "number":
       return (
-        <input
+        <Input
+          id={field.name}
           type="number"
           name={field.name}
           defaultValue={typeof defaultValue === "number" ? defaultValue : ""}
@@ -90,57 +108,46 @@ function FieldControl({
           disabled={disabled}
           min={field.min}
           max={field.max}
-          className={inputClass}
-        />
-      );
-    case "boolean":
-      return (
-        <input
-          type="checkbox"
-          name={field.name}
-          defaultChecked={defaultValue === true}
-          disabled={disabled}
-          className="mt-1"
         />
       );
     case "date":
       return (
-        <input
+        <Input
+          id={field.name}
           type="date"
           name={field.name}
           defaultValue={toDateInputValue(defaultValue)}
           required={field.required}
           disabled={disabled}
-          className={inputClass}
         />
       );
     case "select":
       if (field.many) {
         return (
-          <select
+          <Select
+            id={field.name}
             name={field.name}
             multiple
             defaultValue={
               Array.isArray(defaultValue) ? (defaultValue as string[]) : []
             }
             disabled={disabled}
-            className={inputClass}
           >
             {field.options.map((option) => (
               <option key={option.value} value={option.value}>
                 {option.label}
               </option>
             ))}
-          </select>
+          </Select>
         );
       }
       return (
-        <select
+        <Select
+          id={field.name}
           name={field.name}
           defaultValue={typeof defaultValue === "string" ? defaultValue : ""}
           required={field.required}
           disabled={disabled}
-          className={inputClass}
         >
           <option value="" disabled>
             Select…
@@ -150,12 +157,13 @@ function FieldControl({
               {option.label}
             </option>
           ))}
-        </select>
+        </Select>
       );
     case "relationship":
       if (field.many) {
         return (
-          <textarea
+          <Textarea
+            id={field.name}
             name={field.name}
             defaultValue={
               Array.isArray(defaultValue)
@@ -165,37 +173,40 @@ function FieldControl({
             placeholder={`One "${field.to}" document id per line`}
             disabled={disabled}
             rows={3}
-            className={monoInputClass}
+            className={monoClass}
           />
         );
       }
       return (
-        <input
+        <Input
+          id={field.name}
           type="text"
           name={field.name}
           defaultValue={typeof defaultValue === "string" ? defaultValue : ""}
           placeholder={`A "${field.to}" document id`}
           required={field.required}
           disabled={disabled}
-          className={monoInputClass}
+          className={monoClass}
         />
       );
     case "upload":
       return (
-        <input
+        <Input
+          id={field.name}
           type="text"
           name={field.name}
           defaultValue={typeof defaultValue === "string" ? defaultValue : ""}
           placeholder="A Media id"
           required={field.required}
           disabled={disabled}
-          className={monoInputClass}
+          className={monoClass}
         />
       );
     case "array":
     case "blocks":
       return (
-        <textarea
+        <Textarea
+          id={field.name}
           name={field.name}
           defaultValue={
             defaultValue !== undefined
@@ -209,7 +220,7 @@ function FieldControl({
           }
           disabled={disabled}
           rows={6}
-          className={monoInputClass}
+          className={monoClass}
         />
       );
     default: {
