@@ -4,11 +4,21 @@ import { auth } from "@/lib/auth";
 import { collectionRegistry } from "@/collections/registry";
 import { hasCollectionAccess } from "@/collections/access";
 import { FieldInput } from "@/collections/FieldInput";
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+import { FieldGroup } from "@/components/ui/fieldset";
+import { Text } from "@/components/ui/text";
 import {
   updateDocumentAction,
   deleteDocumentAction,
   setDocumentStatusAction,
 } from "../actions";
+
+const statusColors = {
+  DRAFT: "yellow",
+  PUBLISHED: "green",
+  ARCHIVED: "zinc",
+} as const;
 
 export default async function EditDocument({
   params,
@@ -39,60 +49,59 @@ export default async function EditDocument({
     <div className="max-w-2xl">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-semibold">
+          <h1 className="text-2xl font-semibold text-zinc-900">
             {document.slug ?? document.id}
           </h1>
-          <p className="text-sm text-gray-500">
-            {config.label} · {document.status}
-          </p>
+          <Text>
+            {config.label}{" "}
+            <Badge className="ml-1" color={statusColors[document.status]}>
+              {document.status}
+            </Badge>
+          </Text>
         </div>
         {canDelete && (
           <form action={deleteThisDocument}>
-            <button
-              type="submit"
-              className="rounded border border-red-300 px-3 py-1 text-xs text-red-600"
-            >
+            <Button type="submit" variant="danger">
               Delete
-            </button>
+            </Button>
           </form>
         )}
       </div>
 
       {canUpdate && (
-        <div className="mt-2 flex gap-2">
+        <div className="mt-4 flex gap-2">
           {(["DRAFT", "PUBLISHED", "ARCHIVED"] as const).map((status) => (
             <form
               key={status}
               action={setDocumentStatusAction.bind(null, slug, id, status)}
             >
-              <button
+              <Button
                 type="submit"
+                variant="secondary"
                 disabled={document.status === status}
-                className="rounded border border-gray-300 px-3 py-1 text-xs disabled:opacity-40"
               >
                 Set {status}
-              </button>
+              </Button>
             </form>
           ))}
         </div>
       )}
 
-      <form action={updateThisDocument} className="mt-6 space-y-4">
-        {config.fields.map((field) => (
-          <FieldInput
-            key={field.name}
-            field={field}
-            defaultValue={data[field.name]}
-            disabled={!canUpdate}
-          />
-        ))}
+      <form action={updateThisDocument} className="mt-6">
+        <FieldGroup>
+          {config.fields.map((field) => (
+            <FieldInput
+              key={field.name}
+              field={field}
+              defaultValue={data[field.name]}
+              disabled={!canUpdate}
+            />
+          ))}
+        </FieldGroup>
         {canUpdate && (
-          <button
-            type="submit"
-            className="rounded bg-black px-4 py-2 text-sm text-white"
-          >
+          <Button type="submit" className="mt-6">
             Save
-          </button>
+          </Button>
         )}
       </form>
     </div>

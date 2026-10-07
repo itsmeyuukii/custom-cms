@@ -5,10 +5,9 @@ markup repeated per page) a real shared component library and visual
 theme, styled after Catalyst (Tailwind Plus) — without redistributing
 Catalyst's licensed source.
 
-**Status: phases 1-6 done (foundation primitives, login page, admin
-shell, Roles & Users pages, Media page, Pages admin) — see §5. Phase 7
-is superseded and phase 8 (Collections admin UI) is the only remaining
-work.**
+**Status: complete. Phases 1-6 and 8 are done (foundation primitives,
+login page, admin shell, Roles & Users, Media, Pages, Collections admin
+UI) and phase 7 was superseded by phase 8 — see §5.**
 
 See [PROJECT_PLAN.md](PROJECT_PLAN.md) for how this fits the rest of
 the roadmap, and [COLLECTIONS_PLAN.md](COLLECTIONS_PLAN.md) for the
@@ -239,15 +238,29 @@ no big-bang rewrite in one commit.
    real collection ([COLLECTIONS_PLAN.md](COLLECTIONS_PLAN.md) phase 6)
    and its admin UI is the generic `/admin/[collection]` route from
    phase 8 below, not a standalone Posts page anymore.
-8. **Collections admin UI** — **shipped, but not on this kit**:
-   `/admin/[collection]` ([COLLECTIONS_PLAN.md](COLLECTIONS_PLAN.md)
-   phase 5) was built with plain hand-rolled Tailwind, not
-   `src/components/ui/`, deviating from this phase's explicit plan ("not
-   a migration, a first build... on `src/components/ui/` from the
-   start"). Worth a follow-up pass to bring it onto the kit — same
-   Roles/Users treatment (`Table`, `Button`, `Badge`, and a new
-   `FieldInput`-aware use of `fieldset`/`Checkbox`/`select` primitives)
-   — once prioritized.
+8. ~~**Collections admin UI**~~ — **done**: `/admin/[collection]` shipped
+   ([COLLECTIONS_PLAN.md](COLLECTIONS_PLAN.md) phase 5) on plain
+   hand-rolled Tailwind rather than `src/components/ui/`; this follow-up
+   brought it onto the kit. The list/new/edit pages now use `Table`,
+   `Badge`, `Button`/`ButtonLink` and `FieldGroup`, and
+   [FieldInput.tsx](../apps/cms/src/collections/FieldInput.tsx) renders
+   every field type through `Input`/`Textarea`/`Select`/`Checkbox` with
+   proper `Label htmlFor` wiring (`boolean` fields render as a
+   `CheckboxField`). Pure presentation swap: the form field `name`s,
+   `defaultValue` handling, `disabled` behavior, and every
+   `hasCollectionAccess` check and Server Action binding are unchanged.
+
+   Verified against the real database through the real UI: logged in as
+   admin and viewer, confirmed the themed list/new/edit markup, that the
+   viewer has no "New Post" link, is redirected from `/posts/new`, and
+   sees the edit form with inputs disabled and no Save/Delete/Set
+   controls. As admin, created a temporary Post via the real
+   `createDocumentAction`, published it (the public
+   `/api/v1/posts/zz-theme-post` returned it as PUBLISHED), edited its
+   title, then deleted it through the real delete action (the API then
+   returned 404 and the admin list no longer showed it). No browser
+   screenshot was possible here, so visual polish is unchecked. This
+   completes the admin theme rollout.
 
 ## Open questions
 
