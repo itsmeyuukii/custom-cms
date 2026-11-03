@@ -5,9 +5,10 @@ against a real (ephemeral) Postgres database, plus visual regression
 screenshots — replacing the current "verify by hand every time" habit
 this project has relied on so far.
 
-**Status: phases 1 (infrastructure, #17), 2 (auth & RBAC suite) and 3
-(Pages & Media CRUD) are done. Phases 4-6 (visual baselines) are still
-design only.** See §5 for what each phase covers.
+**Status: all six phases are done**: infrastructure (#17), auth & RBAC
+suite (#36), Pages & Media CRUD (#37), and visual baselines for login,
+admin shell and the admin screens (#38). See §5 for what each phase
+covers, and the Open questions for what's still undecided.
 
 See [PROJECT_PLAN.md](PROJECT_PLAN.md) §4 ("No automated tests" — the
 gap this closes) and [ADMIN_THEME_PLAN.md](ADMIN_THEME_PLAN.md) (the
@@ -120,10 +121,26 @@ apps/cms/
     pages.spec.ts        # create/edit/publish a Page end-to-end
     media.spec.ts         # upload + delete
     visual/
-      login.spec.ts        # toHaveScreenshot() coverage, added per theme phase
+      helpers.ts           # skipUnlessLinux(), expectPageScreenshot()
+      login.spec.ts        # toHaveScreenshot() coverage
       admin-shell.spec.ts
-      ...
+      admin-pages.spec.ts  # Roles/Users, Media, Pages, Posts
+      *.spec.ts-snapshots/ # committed baseline PNGs (Linux only)
 ```
+
+Visual specs are their own Playwright project (`visual`, with
+`testDir: ./e2e/visual`); the functional project (`chromium`) ignores
+that folder. `npm run e2e` runs functional only, `npm run e2e:visual`
+runs visual only.
+
+**Why two projects, run in order:** screenshots must only show data
+that's identical on every run, i.e. the seed (three users, three system
+roles, no pages/posts/media). The functional specs create pages and
+media as they run, in parallel, so a list screenshot taken alongside
+them would change from run to run. CI runs `e2e:visual` as its own step
+first, then `e2e`. Running both together locally on Linux, or against a
+database previous runs have written to, will produce visual failures
+that aren't real.
 
 Functional (`auth`/`rbac`/`pages`/`media`) and visual specs are kept in
 separate files/folders since they have different failure modes — a
@@ -180,12 +197,33 @@ e2e:
 gets `"e2e": "playwright test"`, mirroring how `lint`/`typecheck`
 already fan out through Turborepo.
 
-**Updating visual baselines** (per ADMIN_THEME_PLAN phase, or any
-intentional redesign): a manually-triggered `workflow_dispatch` job
-(or the Playwright Docker image run locally) that runs
-`playwright test --update-snapshots` and opens/updates a PR with the
-new baseline PNGs — never done ad hoc from a Windows machine, per the
-constraint above.
+**Updating visual baselines** (a new visual spec, or any intentional
+redesign): push the change and let the PR's CI run fail. When the
+`visual` step fails, the e2e job reruns it with
+`--update-snapshots=changed` (still against seed-only data, since visual
+specs never write) and uploads every `*-snapshots/` folder as a
+`visual-baselines` artifact. Then, from the repo root:
+
+```
+gh run download <run-id> -n visual-baselines -D apps/cms/e2e/visual
+```
+
+Look at the changed PNGs (`git diff --stat`, then open them) to confirm
+the change is the intended one, commit them to the PR, and CI goes
+green. This replaced the originally planned `workflow_dispatch` job: a
+dispatch workflow can only be triggered once it exists on `main`, and
+pushing the PNGs from a bot with `GITHUB_TOKEN` wouldn't re-trigger CI
+on the PR. Downloading keeps a human looking at every baseline before
+it's committed. The Playwright Docker image locally is still a valid
+alternative, but never `--update-snapshots` directly on Windows.
+
+Two guards back this up: `playwright.config.ts` sets `updateSnapshots:
+"none"` under CI (otherwise a missing baseline gets written on the
+first attempt and the retry passes against it, so a spec with no
+committed baseline would go green as "flaky"), and every visual spec
+calls `skipUnlessLinux()`. The e2e job is pinned to `ubuntu-24.04`
+rather than `ubuntu-latest`, so a runner image bump can't change font
+rendering under the baselines without anyone choosing it.
 
 ## 5. Phased initial scope
 
@@ -234,12 +272,22 @@ coverage lands alongside each `ADMIN_THEME_PLAN.md` phase as it ships:
    against the real store. Giving CI a throwaway Blob store (or mocking
    `@vercel/blob`) is an open follow-up, not decided.
 
-4. **Visual: Login page** — lands together with `ADMIN_THEME_PLAN.md`
-   phase 2.
-5. **Visual: Admin shell** — lands together with `ADMIN_THEME_PLAN.md`
-   phase 3.
-6. **Visual: Roles/Users, Media, Pages admin** — lands together with
-   the corresponding `ADMIN_THEME_PLAN.md` phases 4–6.
+4. ~~**Visual: Login page**~~ — **done** (#38): empty form and the
+   invalid-credentials error state.
+5. ~~**Visual: Admin shell**~~ — **done** (#38): admin dashboard (full
+   sidebar), viewer dashboard (no Roles/Users), and the user menu open.
+6. ~~**Visual: Roles/Users, Media, Pages admin**~~ — **done** (#38):
+   roles list, Editor role edit form, users list, Editor user's role
+   form, media library with upload form, pages list, new page form, and
+   the Posts collection list and new post form.
+
+   The admin theme had already fully landed by then, so 4-6 shipped
+   together rather than one per theme phase. List screens are captured
+   in their empty state, since seed data has no pages/posts/media (see
+   §3 for why visual can't share data with the functional specs). A
+   populated table and the page detail/blocks view aren't covered yet:
+   they'd need the visual project to create fixed data of its own, with
+   no dates on screen and nothing left behind for a retry to trip on.
 
 ## Open questions
 

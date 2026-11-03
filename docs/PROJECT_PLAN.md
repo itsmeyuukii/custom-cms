@@ -112,10 +112,12 @@ correctly at its public URL with real data from the database.
 - Block content is entered as raw JSON in the admin — no real visual editor
   (Collections' `array`/`blocks` fields have the same limitation, by
   design — see [COLLECTIONS_PLAN.md](COLLECTIONS_PLAN.md) phase 5)
-- Limited automated tests: Playwright covers auth, RBAC, Pages CRUD and
-  Media permissions/validation. The real Media upload/delete test only runs
-  locally (needs a Vercel Blob token), and visual baselines don't exist yet
-  (see [E2E_TESTING_PLAN.md](E2E_TESTING_PLAN.md) phases 4-6)
+- Gaps in automated tests: Playwright covers auth, RBAC, Pages CRUD,
+  Media permissions/validation, and visual baselines for login, the admin
+  shell and the admin screens. The real Media upload/delete test only
+  runs locally (needs a Vercel Blob token), and visual coverage only
+  shows seed data: lists in their empty state, no populated tables or
+  page detail view (see [E2E_TESTING_PLAN.md](E2E_TESTING_PLAN.md) §5)
 - **Sign-out can be undone by in-flight requests (found by the e2e suite,
   unfixed).** Under parallel load, about 1 in 25 sign-outs in a production
   build left the user still logged in: requests already in flight when
@@ -147,10 +149,9 @@ default sequence, not a locked contract.
    [ADMIN_THEME_PLAN.md](ADMIN_THEME_PLAN.md). Every admin page (login,
    shell, Roles & Users, Media, Pages, and the generic Collections UI)
    is on the shared `src/components/ui/` kit.
-5. E2E & visual regression testing (Playwright) — see
-   [E2E_TESTING_PLAN.md](E2E_TESTING_PLAN.md). Functional coverage
-   (auth/RBAC/CRUD) is independent and valuable immediately; visual
-   coverage tracks the admin theme rollout phase-by-phase as it lands.
+5. ~~E2E & visual regression testing (Playwright)~~ — **done**, all six
+   phases of [E2E_TESTING_PLAN.md](E2E_TESTING_PLAN.md) (functional
+   auth/RBAC/CRUD, then visual baselines for every themed admin screen).
 6. Collections system
 7. Enforce Collections access via RBAC v2
 
@@ -469,6 +470,7 @@ itself later is still an open question, not a decision made.
 - **Auth.js returns `UntrustedHost` (500 on every `/api/auth/*` request) under `next start` on localhost.** It only auto-trusts the request host on Vercel; anywhere else in production mode you need `AUTH_TRUST_HOST=true` (or `trustHost: true`). Invisible in `next dev`, which is why it only surfaced when Playwright started running against a production build. The Playwright config sets it for the test web server only; the app itself is unchanged.
 - **An unset GitHub Actions secret expands to an empty string, not to "unset".** `${{ secrets.SEED_USER_PASSWORD }}` with no such secret gives `SEED_USER_PASSWORD=""`, so `process.env.X ?? "fallback"` does _not_ fall back and the seed script hashes an empty password. The e2e job now uses a fixed throwaway value in the workflow instead (its database is destroyed after every run); test code reads it with `||`.
 - **Playwright's `toHaveURL` with a loose regex can pass too early.** `/\/admin\/pages\/[^/]+$/` also matches `/admin/pages/new`, the form the test was still on, so the assertion passed before the submit finished. Exclude the starting URL explicitly (`(?!new$)`).
+- **A Playwright retry silently accepts a missing screenshot baseline.** With the default `updateSnapshots: "missing"`, the first attempt writes the missing PNG (and fails), then the CI retry compares against the file it just wrote and passes, so a visual spec with no committed baseline shows up as "flaky" rather than failed. `playwright.config.ts` sets `updateSnapshots: "none"` under CI. Baselines come from the CI e2e job's `visual-baselines` artifact instead (see [E2E_TESTING_PLAN.md](E2E_TESTING_PLAN.md) §4).
 
 ---
 
