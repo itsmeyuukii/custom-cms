@@ -4,9 +4,22 @@ Goal: cap how fast one client can hit login (brute-force protection,
 [SECURITY_REVIEW.md](SECURITY_REVIEW.md) finding #4) and the public REST
 API (`/api/v1/*`), using a counter shared by every serverless instance.
 
-**Status: phases 1 (model + `src/lib/rate-limit.ts`) and 2 (login
-limiting) done. Phases 3 (public API) and 4 (production check) not
-started.** See §6.
+**Status: phases 1 (model + `src/lib/rate-limit.ts`), 2 (login
+limiting) and 3 (public API limiting) done. Phase 4 (production check)
+not started.** See §6.
+
+Phase 3 was verified by the functional e2e suite against a local
+production build (18 passed, 1 skipped): the new API test sees
+`X-RateLimit-Limit: 120` / `Remaining: 119` and no `Set-Cookie` on the
+first response, 119 more concurrent requests all `200`, then a `429`
+with the `RATE_LIMITED` envelope, `Retry-After` within 1-60s and
+`Remaining: 0`, while a different IP still gets `200`. The existing
+"logged-out visitors are redirected from /admin/\*" test still passes,
+so the `/admin` gate is unchanged behind the new proxy branch. One
+implementation detail the design didn't anticipate: next-auth types the
+wrapped proxy's second argument as route-handler context (`{ params }`),
+not `NextFetchEvent`. It only forwards it to the callback, which ignores
+it, so `proxy.ts` passes an empty context instead of a cast.
 
 Phase 2 was verified by the full functional e2e suite against a local
 production build: 17 passed (1 skipped, the Blob round trip), including
