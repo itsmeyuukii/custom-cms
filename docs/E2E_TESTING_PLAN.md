@@ -5,9 +5,9 @@ against a real (ephemeral) Postgres database, plus visual regression
 screenshots — replacing the current "verify by hand every time" habit
 this project has relied on so far.
 
-**Status: phases 1 (infrastructure, #17) and 2 (auth & RBAC suite) are
-done. Phases 3-6 (Pages & Media CRUD, visual baselines) are still design
-only.** See §5 for what each phase covers.
+**Status: phases 1 (infrastructure, #17), 2 (auth & RBAC suite) and 3
+(Pages & Media CRUD) are done. Phases 4-6 (visual baselines) are still
+design only.** See §5 for what each phase covers.
 
 See [PROJECT_PLAN.md](PROJECT_PLAN.md) §4 ("No automated tests" — the
 gap this closes) and [ADMIN_THEME_PLAN.md](ADMIN_THEME_PLAN.md) (the
@@ -216,8 +216,24 @@ coverage lands alongside each `ADMIN_THEME_PLAN.md` phase as it ships:
    a repo secret - the database is destroyed after each run, and an unset
    secret expands to `""`, which the seed would hash as an empty password.
 
-3. **Pages & Media CRUD** — create/edit/publish a Page, upload/delete
-   Media, against the real Server Actions.
+3. ~~**Pages & Media CRUD**~~ — **done**: `e2e/pages.spec.ts` and
+   `e2e/media.spec.ts`, against the real Server Actions.
+
+   Pages: an editor creates a page (DRAFT, public route 404s), adds a Hero
+   block through the real form, publishes it (the public route now returns
+   200 with the block's heading), then archives it (404 again); a viewer
+   can open a page but sees no status or Add Block controls. The admin UI
+   has no page-edit form beyond blocks and status, so "edit" means those.
+
+   Media: viewer sees no upload form, editor sees upload but no Delete,
+   and a `text/plain` file pushed past the browser's `accept` hint is
+   rejected by the server (500, nothing listed). The real upload/delete
+   round trip (editor uploads, public blob URL returns 200, admin deletes,
+   URL polls to 404) talks to Vercel Blob, so it is **skipped unless
+   `BLOB_READ_WRITE_TOKEN` is set**. CI has none, so it only runs locally
+   against the real store. Giving CI a throwaway Blob store (or mocking
+   `@vercel/blob`) is an open follow-up, not decided.
+
 4. **Visual: Login page** — lands together with `ADMIN_THEME_PLAN.md`
    phase 2.
 5. **Visual: Admin shell** — lands together with `ADMIN_THEME_PLAN.md`

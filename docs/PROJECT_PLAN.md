@@ -112,9 +112,19 @@ correctly at its public URL with real data from the database.
 - Block content is entered as raw JSON in the admin — no real visual editor
   (Collections' `array`/`blocks` fields have the same limitation, by
   design — see [COLLECTIONS_PLAN.md](COLLECTIONS_PLAN.md) phase 5)
-- Limited automated tests: Playwright covers auth and RBAC only so far
-  (see [E2E_TESTING_PLAN.md](E2E_TESTING_PLAN.md) phases 3-6 for Pages/
-  Media CRUD and visual baselines)
+- Limited automated tests: Playwright covers auth, RBAC, Pages CRUD and
+  Media permissions/validation. The real Media upload/delete test only runs
+  locally (needs a Vercel Blob token), and visual baselines don't exist yet
+  (see [E2E_TESTING_PLAN.md](E2E_TESTING_PLAN.md) phases 4-6)
+- **Sign-out can be undone by in-flight requests (found by the e2e suite,
+  unfixed).** Under parallel load, about 1 in 25 sign-outs in a production
+  build left the user still logged in: requests already in flight when
+  `signOut` clears the session cookie (sidebar link prefetches, the
+  post-action refresh) finish afterward, and the `proxy.ts` auth wrapper
+  re-sets the session cookie on their responses. Observed in the cookie
+  trace as `POST /admin` clearing it, then `GET /admin/pages` etc. setting
+  it again. `e2e/auth.spec.ts`'s logout test is the detector and is
+  occasionally flaky because of it (CI retries once).
 - Branch protection not configured — CI reports status but doesn't yet block a failing merge
 - No rate limiting (login or public API)
 
