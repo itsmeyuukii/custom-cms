@@ -35,7 +35,9 @@ admin-configurable roles/departments — replaces the fixed
 ADMIN/EDITOR/VIEWER enum with roles an admin creates and assigns
 permissions to),
 [RATE_LIMIT_PLAN.md](RATE_LIMIT_PLAN.md) (design for Postgres-backed
-rate limiting on login and the public API)
+rate limiting on login and the public API),
+[UNIT_TESTING_PLAN.md](UNIT_TESTING_PLAN.md) (design for Vitest unit,
+component and test-database integration tests, and the test-first rule)
 
 ---
 
@@ -159,6 +161,13 @@ default sequence, not a locked contract.
 8. ~~Rate limiting on login and the public API~~ — done, 2026-11-03. Design in
    [RATE_LIMIT_PLAN.md](RATE_LIMIT_PLAN.md) (P3 item 7 below). Phases 1-3
    (limiter, login, public API) and phase 4 (production check) done.
+
+9. **Unit testing with Vitest** — design in
+   [UNIT_TESTING_PLAN.md](UNIT_TESTING_PLAN.md). Unit, component and
+   test-database integration projects, plus a test-first rule for
+   `src/lib/` and `src/collections/` in CLAUDE.md. Lands before #3 in
+   [SECURITY_REVIEW.md](SECURITY_REVIEW.md) (block data validation) so
+   that fix can be built test-first.
 
 Reasoning for that order, and everything after it, follows.
 
