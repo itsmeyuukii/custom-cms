@@ -8,16 +8,16 @@ attack surface not covered here.
 
 ## Summary
 
-| #   | Finding                                                                                | Severity     | Status                                                                     |
-| --- | -------------------------------------------------------------------------------------- | ------------ | -------------------------------------------------------------------------- |
-| 1   | Missing authorization on `addBlock` / `setPageStatus` server actions                   | **Critical** | **Fixed** (2026-09-15)                                                     |
-| 2   | `Role` (ADMIN/EDITOR/VIEWER) is never actually enforced anywhere                       | **High**     | **Fixed** (2026-09-15)                                                     |
-| 3   | Block `data` accepted with no validation against its Component's schema, no size limit | Medium       | Open                                                                       |
-| 4   | No rate limiting on login                                                              | Medium       | Mitigated — login limited (RATE_LIMIT_PLAN.md phase 2), prod check pending |
-| 5   | Seeded admin password is weak and documented in plaintext                              | Medium       | Open — expected for local dev, must rotate before any shared/prod use      |
-| 6   | 4 high-severity advisories in Prisma CLI's transitive deps (`mysql2`, `deepmerge-ts`)  | Low          | Open, dev-tooling only                                                     |
-| 7   | No security headers configured (CSP, `X-Frame-Options`, etc.)                          | Low          | Open                                                                       |
-| 8   | `CardGrid` renders admin-supplied `imageUrl` with no allow-list                        | Low          | Open                                                                       |
+| #   | Finding                                                                                | Severity     | Status                                                                |
+| --- | -------------------------------------------------------------------------------------- | ------------ | --------------------------------------------------------------------- |
+| 1   | Missing authorization on `addBlock` / `setPageStatus` server actions                   | **Critical** | **Fixed** (2026-09-15)                                                |
+| 2   | `Role` (ADMIN/EDITOR/VIEWER) is never actually enforced anywhere                       | **High**     | **Fixed** (2026-09-15)                                                |
+| 3   | Block `data` accepted with no validation against its Component's schema, no size limit | Medium       | Open                                                                  |
+| 4   | No rate limiting on login                                                              | Medium       | **Fixed** (2026-11-03)                                                |
+| 5   | Seeded admin password is weak and documented in plaintext                              | Medium       | Open — expected for local dev, must rotate before any shared/prod use |
+| 6   | 4 high-severity advisories in Prisma CLI's transitive deps (`mysql2`, `deepmerge-ts`)  | Low          | Open, dev-tooling only                                                |
+| 7   | No security headers configured (CSP, `X-Frame-Options`, etc.)                          | Low          | Open                                                                  |
+| 8   | `CardGrid` renders admin-supplied `imageUrl` with no allow-list                        | Low          | Open                                                                  |
 
 ---
 
@@ -129,6 +129,15 @@ beyond localhost.
 in-memory or Redis-backed limiter keyed by IP + email) before this goes
 anywhere public.
 
+**Fixed (2026-11-03):** login is limited to 5 attempts per 15 minutes
+per IP + email and 30 per IP, using a Postgres-backed counter shared by
+every serverless instance (an in-memory one wouldn't be, on Vercel).
+Checked against production: spoofing `x-forwarded-for` doesn't reset the
+limit. See [RATE_LIMIT_PLAN.md](RATE_LIMIT_PLAN.md). Still open: many
+IPs guessing one account (no per-email limit, since without a recovery
+flow it would let anyone lock a user out), tracked there under Open
+questions alongside #5.
+
 ## 5. Seeded admin password — Medium (expected for now)
 
 **File:** [prisma/seed.ts](../prisma/seed.ts) — `admin@example.com` /
@@ -190,7 +199,7 @@ per finding #2).
 
 _Findings #1 and #2 (the ones that mattered most — they meant the `Role`
 model this app is built around wasn't actually providing any protection)
-are fixed as of 2026-09-15. Next worth doing: #3 (block data validation)
-and #4 (login rate limiting) — see
+are fixed as of 2026-09-15, and #4 (login rate limiting) as of
+2026-11-03. Next worth doing: #3 (block data validation) — see
 [PROJECT_PLAN.md](PROJECT_PLAN.md) §5 for how these fit into the overall
 roadmap._
