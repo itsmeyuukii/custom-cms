@@ -4,9 +4,20 @@ Goal: cap how fast one client can hit login (brute-force protection,
 [SECURITY_REVIEW.md](SECURITY_REVIEW.md) finding #4) and the public REST
 API (`/api/v1/*`), using a counter shared by every serverless instance.
 
-**Status: phases 1 (model + `src/lib/rate-limit.ts`), 2 (login
-limiting) and 3 (public API limiting) done. Phase 4 (production check)
-not started.** See §6.
+**Status: done (2026-11-03). Phases 1 (model + `src/lib/rate-limit.ts`), 2 (login
+limiting), 3 (public API limiting) and 4 (production check) all
+complete.** See §6.
+
+Phase 4 was run against https://custom-cms-lyart.vercel.app on
+2026-11-03: seven wrong-password `POST /api/auth/callback/credentials`
+requests for a nonexistent `@nonexistent.invalid` email, each with a
+different spoofed `x-forwarded-for` and `x-real-ip`. Attempts 1-5
+redirected with `code=credentials`, attempts 6 and 7 with
+`code=rate_limited`. If either header had been trusted, every attempt
+would have had a fresh `login:ip-email` bucket and none would have been
+blocked, so Vercel replaces both with the real client IP. The
+`clientIp` assumption in §2 holds in production. No real account was
+touched; the counter rows expire with the normal one-day cleanup.
 
 Phase 3 was verified by the functional e2e suite against a local
 production build (18 passed, 1 skipped): the new API test sees

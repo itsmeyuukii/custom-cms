@@ -130,7 +130,6 @@ correctly at its public URL with real data from the database.
   it again. `e2e/auth.spec.ts`'s logout test is the detector and is
   occasionally flaky because of it (CI retries once).
 - Branch protection not configured — CI reports status but doesn't yet block a failing merge
-- Rate limiting is built (login and public API, see [RATE_LIMIT_PLAN.md](RATE_LIMIT_PLAN.md)) but not yet checked against production: phase 4 confirms Vercel ignores a spoofed `x-forwarded-for`
 
 `npm run format:check`, `npm run lint`, and `npm run typecheck` all pass
 clean as of this writing, and CI runs all three on every push/PR.
@@ -157,9 +156,9 @@ default sequence, not a locked contract.
 6. ~~Collections system~~ — done, 2026-09-28 (P2 item 4 below)
 7. ~~Enforce Collections access via RBAC v2~~ — done, as part of
    Collections (P2 item 5 below)
-8. **Rate limiting on login and the public API** — design in
+8. ~~Rate limiting on login and the public API~~ — done, 2026-11-03. Design in
    [RATE_LIMIT_PLAN.md](RATE_LIMIT_PLAN.md) (P3 item 7 below). Phases 1-3
-   (limiter, login, public API) done; phase 4 (production check) left.
+   (limiter, login, public API) and phase 4 (production check) done.
 
 Reasoning for that order, and everything after it, follows.
 
@@ -349,7 +348,7 @@ permissions` server-side (not just a hidden button), confirmed via
    making this a required check in GitHub's branch protection settings
    (so a failing PR is actually blocked from merging, not just flagged)
    — that's a repo-settings change only doable from the GitHub UI itself.
-7. Rate limiting on login and on public API endpoints
+7. ~~Rate limiting on login and on public API endpoints~~ — **done, 2026-11-03**
    ([SECURITY_REVIEW.md](SECURITY_REVIEW.md) finding #4) — design in
    [RATE_LIMIT_PLAN.md](RATE_LIMIT_PLAN.md): Postgres-backed fixed
    windows (no new service), login limited per IP + email and per IP,
