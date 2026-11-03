@@ -130,7 +130,7 @@ correctly at its public URL with real data from the database.
   it again. `e2e/auth.spec.ts`'s logout test is the detector and is
   occasionally flaky because of it (CI retries once).
 - Branch protection not configured — CI reports status but doesn't yet block a failing merge
-- No rate limiting (login or public API)
+- Rate limiting is built (login and public API, see [RATE_LIMIT_PLAN.md](RATE_LIMIT_PLAN.md)) but not yet checked against production: phase 4 confirms Vercel ignores a spoofed `x-forwarded-for`
 
 `npm run format:check`, `npm run lint`, and `npm run typecheck` all pass
 clean as of this writing, and CI runs all three on every push/PR.
@@ -158,8 +158,8 @@ default sequence, not a locked contract.
 7. ~~Enforce Collections access via RBAC v2~~ — done, as part of
    Collections (P2 item 5 below)
 8. **Rate limiting on login and the public API** — design in
-   [RATE_LIMIT_PLAN.md](RATE_LIMIT_PLAN.md) (P3 item 7 below), awaiting
-   review. Closes SECURITY_REVIEW #4 on a site that's already public.
+   [RATE_LIMIT_PLAN.md](RATE_LIMIT_PLAN.md) (P3 item 7 below). Phases 1-3
+   (limiter, login, public API) done; phase 4 (production check) left.
 
 Reasoning for that order, and everything after it, follows.
 
@@ -449,8 +449,8 @@ start — easy to reason about for a CMS-content use case, easy to `LIMIT`/
   (e.g. a build script), add a scoped `ApiKey` model (`key` hash, a set
   of permission keys, optional expiry) rather than expecting external
   clients to hold NextAuth session cookies.
-- Rate limit before this is public-facing beyond localhost (P3, ties to
-  [SECURITY_REVIEW.md](SECURITY_REVIEW.md) finding #4) — an unauthenticated
+- ~~Rate limit before this is public-facing beyond localhost~~ (P3, ties to
+  [SECURITY_REVIEW.md](SECURITY_REVIEW.md) finding #4): done, 120 requests/min per IP, see [RATE_LIMIT_PLAN.md](RATE_LIMIT_PLAN.md) §4. An unauthenticated
   read endpoint is also the easiest thing to hammer.
 
 ### Relationship to the Collections system
