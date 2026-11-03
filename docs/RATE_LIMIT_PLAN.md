@@ -4,7 +4,17 @@ Goal: cap how fast one client can hit login (brute-force protection,
 [SECURITY_REVIEW.md](SECURITY_REVIEW.md) finding #4) and the public REST
 API (`/api/v1/*`), using a counter shared by every serverless instance.
 
-**Status: design only, nothing implemented yet.**
+**Status: phase 1 (model + `src/lib/rate-limit.ts`) done, nothing
+calls it yet. Phases 2-4 not started.** See §6.
+
+Phase 1 was verified against the real local database with a throwaway
+script (deleted after): 50 concurrent `consume` calls on one key with
+limit 10 left exactly one row with `count = 50`, exactly 10 results
+`allowed`, and each `remaining` value 0-9 exactly once. The stored
+`windowStart` matched the UTC window boundary on a non-UTC machine,
+windows rolled over correctly, `pruneExpired` removed a two-day-old row
+and kept the current one, and `clientIp` handled `x-forwarded-for`,
+`x-real-ip` and neither.
 
 ## The constraint everything rests on: no shared memory
 
