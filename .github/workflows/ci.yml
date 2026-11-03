@@ -28,7 +28,9 @@ jobs:
       - run: npm run typecheck
 
   e2e:
-    runs-on: ubuntu-latest
+    # Pinned, not ubuntu-latest: visual baselines are pixel-exact, and a
+    # runner image bump can change font rendering under them.
+    runs-on: ubuntu-24.04
     services:
       postgres:
         image: postgres:16
@@ -65,5 +67,23 @@ jobs:
         working-directory: apps/cms
       - run: npm run build
         working-directory: apps/cms
-      - run: npm run e2e
+      # Visual first, while the database still holds only seed data.
+      - id: visual
+        run: npm run e2e:visual
+        working-directory: apps/cms
+      # On a visual failure, regenerate the baselines (still against
+      # seed-only data, visual specs don't write) and upload them, so
+      # new/changed PNGs can be reviewed and committed - see
+      # docs/E2E_TESTING_PLAN.md §4.
+      - if: failure() && steps.visual.outcome == 'failure'
+        run: npm run e2e:visual -- --update-snapshots=changed
+        working-directory: apps/cms
+      - if: failure() && steps.visual.outcome == 'failure'
+        uses: actions/upload-artifact@v4
+        with:
+          name: visual-baselines
+          path: apps/cms/e2e/visual/*-snapshots/
+          if-no-files-found: ignore
+      - if: ${{ !cancelled() && steps.visual.outcome != 'skipped' }}
+        run: npm run e2e
         working-directory: apps/cms
