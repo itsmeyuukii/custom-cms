@@ -33,7 +33,9 @@ the "Charcoal & Ember" portfolio theme into components for
 [RBAC_PLAN.md](RBAC_PLAN.md) (design for database-driven,
 admin-configurable roles/departments — replaces the fixed
 ADMIN/EDITOR/VIEWER enum with roles an admin creates and assigns
-permissions to)
+permissions to),
+[RATE_LIMIT_PLAN.md](RATE_LIMIT_PLAN.md) (design for Postgres-backed
+rate limiting on login and the public API)
 
 ---
 
@@ -152,8 +154,12 @@ default sequence, not a locked contract.
 5. ~~E2E & visual regression testing (Playwright)~~ — **done**, all six
    phases of [E2E_TESTING_PLAN.md](E2E_TESTING_PLAN.md) (functional
    auth/RBAC/CRUD, then visual baselines for every themed admin screen).
-6. Collections system
-7. Enforce Collections access via RBAC v2
+6. ~~Collections system~~ — done, 2026-09-28 (P2 item 4 below)
+7. ~~Enforce Collections access via RBAC v2~~ — done, as part of
+   Collections (P2 item 5 below)
+8. **Rate limiting on login and the public API** — design in
+   [RATE_LIMIT_PLAN.md](RATE_LIMIT_PLAN.md) (P3 item 7 below), awaiting
+   review. Closes SECURITY_REVIEW #4 on a site that's already public.
 
 Reasoning for that order, and everything after it, follows.
 
@@ -344,8 +350,12 @@ permissions` server-side (not just a hidden button), confirmed via
    (so a failing PR is actually blocked from merging, not just flagged)
    — that's a repo-settings change only doable from the GitHub UI itself.
 7. Rate limiting on login and on public API endpoints
-   ([SECURITY_REVIEW.md](SECURITY_REVIEW.md) finding #4)
-8. Automated tests
+   ([SECURITY_REVIEW.md](SECURITY_REVIEW.md) finding #4) — design in
+   [RATE_LIMIT_PLAN.md](RATE_LIMIT_PLAN.md): Postgres-backed fixed
+   windows (no new service), login limited per IP + email and per IP,
+   `/api/v1/*` per IP with a `429` envelope.
+8. ~~Automated tests~~ — **done**, see
+   [E2E_TESTING_PLAN.md](E2E_TESTING_PLAN.md)
 9. ~~Deployment target~~ — **Done, 2026-09-15.** Live at
    https://custom-cms-lyart.vercel.app (Vercel + Prisma Postgres, both
    free tier, not Neon as originally planned — Vercel's own first-party

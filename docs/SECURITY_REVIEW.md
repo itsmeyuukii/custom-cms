@@ -13,7 +13,7 @@ attack surface not covered here.
 | 1   | Missing authorization on `addBlock` / `setPageStatus` server actions                   | **Critical** | **Fixed** (2026-09-15)                                                |
 | 2   | `Role` (ADMIN/EDITOR/VIEWER) is never actually enforced anywhere                       | **High**     | **Fixed** (2026-09-15)                                                |
 | 3   | Block `data` accepted with no validation against its Component's schema, no size limit | Medium       | Open                                                                  |
-| 4   | No rate limiting on login                                                              | Medium       | Open                                                                  |
+| 4   | No rate limiting on login                                                              | Medium       | Open — design in [RATE_LIMIT_PLAN.md](RATE_LIMIT_PLAN.md)             |
 | 5   | Seeded admin password is weak and documented in plaintext                              | Medium       | Open — expected for local dev, must rotate before any shared/prod use |
 | 6   | 4 high-severity advisories in Prisma CLI's transitive deps (`mysql2`, `deepmerge-ts`)  | Low          | Open, dev-tooling only                                                |
 | 7   | No security headers configured (CSP, `X-Frame-Options`, etc.)                          | Low          | Open                                                                  |
