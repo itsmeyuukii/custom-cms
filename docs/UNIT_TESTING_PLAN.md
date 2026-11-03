@@ -4,7 +4,16 @@ Goal: fast unit, component and database-integration tests with Vitest,
 so new logic in this repo can be written test-first, alongside the
 existing Playwright suite.
 
-**Status: design only, nothing implemented yet.**
+**Status: phase 1 (setup + unit project) done. Phases 2-4 not started.**
+
+Phase 1: 30 unit tests across `src/collections/` (validation, form
+parsing, serialization) and `src/lib/` (API envelope, `clientIp`), run
+by `npm run test` locally and in the CI `checks` job. The
+`documentToJson` bug from §6 was fixed test-first: the new test failed
+with `id: "spoofed"`, then passed after moving the `...data` spread
+first. One change from the design: Vite 8 (under Vitest 5) resolves the
+`@/*` alias itself with `resolve.tsconfigPaths: true`, so
+`vite-tsconfig-paths` isn't used (§1, §3).
 
 ## The core distinction: what Vitest is for vs what Playwright is for
 
@@ -56,14 +65,14 @@ Playwright's job.
 
 ## 1. Packages (devDependencies of `apps/cms`)
 
-`vitest`, `@vitejs/plugin-react`, `vite-tsconfig-paths` (resolves the
-`@/*` alias from `tsconfig.json`), `jsdom`, `@testing-library/react`,
+`vitest`, `@vitejs/plugin-react`, `jsdom`, `@testing-library/react`,
 `@testing-library/dom`, `@testing-library/user-event`,
 `@testing-library/jest-dom` (`toBeInTheDocument()` etc.).
 
 That's the set Next's bundled guide
 (`node_modules/next/dist/docs/01-app/02-guides/testing/vitest.md`)
-lists, plus `user-event` and `jest-dom`.
+lists, plus `user-event` and `jest-dom`, minus `vite-tsconfig-paths`:
+Vite 8 resolves `tsconfig.json` paths natively (`resolve.tsconfigPaths`).
 
 ## 2. Layout and naming
 
@@ -93,10 +102,10 @@ Colocated `*.test.ts` files under `src/app/` don't become routes (only
 ```ts
 import { defineConfig } from "vitest/config";
 import react from "@vitejs/plugin-react";
-import tsconfigPaths from "vite-tsconfig-paths";
 
 export default defineConfig({
-  plugins: [tsconfigPaths(), react()],
+  plugins: [react()],
+  resolve: { tsconfigPaths: true },
   test: {
     projects: [
       {
@@ -267,5 +276,3 @@ New section in CLAUDE.md, landed in phase 1:
   `revalidatePath`/`redirect`, which need Next's request context.
   Revisit when the first action-level bug shows up; Playwright covers
   them today.
-- **Vitest native path aliases**: if Vitest's built-in tsconfig path
-  resolution covers `@/*`, drop `vite-tsconfig-paths`. Check in phase 1.

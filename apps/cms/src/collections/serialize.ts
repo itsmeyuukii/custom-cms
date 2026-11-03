@@ -7,9 +7,11 @@ import type { Document } from "@prisma/client";
 
 export function documentToJson(document: Document) {
   const data = document.data as Record<string, unknown>;
+  // `data` first, so a field that happens to share a name with one of the
+  // Document's own columns (e.g. `id`) can't replace it.
   return {
-    id: document.id,
     ...data,
+    id: document.id,
     slug: document.slug,
     status: document.status,
     authorId: document.authorId,

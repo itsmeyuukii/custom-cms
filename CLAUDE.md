@@ -116,10 +116,25 @@ inside `apps/cms/` directly to work on just that app.
 npm run format:check
 npm run lint
 npm run typecheck
+npm run test
 ```
 
 (`npm run format` to actually fix formatting issues it finds.) CI runs
-these same three on every push/PR — see `.github/workflows/ci.yml`.
+these same four on every push/PR — see `.github/workflows/ci.yml`.
+
+## Test-first (Vitest)
+
+Unit tests use Vitest, colocated with the code they test; the file
+suffix picks the project (see `docs/UNIT_TESTING_PLAN.md` §2). Run
+`npm run test:watch` inside `apps/cms/` while working.
+
+- **New or changed logic in `src/lib/` and `src/collections/` is
+  written test-first:** write the failing test, watch it fail, then
+  write the code.
+- **Every bug fix starts with a failing test** that reproduces it, at
+  the lowest layer that can (unit before Playwright).
+- UI-only and page-level changes keep relying on Playwright (`e2e/`).
+- Tests import `describe`/`it`/`expect` from `vitest` (no globals).
 
 ## Verification standard
 
