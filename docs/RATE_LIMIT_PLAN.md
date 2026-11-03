@@ -4,8 +4,19 @@ Goal: cap how fast one client can hit login (brute-force protection,
 [SECURITY_REVIEW.md](SECURITY_REVIEW.md) finding #4) and the public REST
 API (`/api/v1/*`), using a counter shared by every serverless instance.
 
-**Status: phase 1 (model + `src/lib/rate-limit.ts`) done, nothing
-calls it yet. Phases 2-4 not started.** See §6.
+**Status: phases 1 (model + `src/lib/rate-limit.ts`) and 2 (login
+limiting) done. Phases 3 (public API) and 4 (production check) not
+started.** See §6.
+
+Phase 2 was verified by the full functional e2e suite against a local
+production build: 17 passed (1 skipped, the Blob round trip), including
+the two new `rate-limit.spec.ts` login tests. Afterwards every
+`RateLimit` key in the test database was one of the tests' fake
+`2001:db8:` IPs, none `unknown` or localhost, which confirms the
+`x-forwarded-for` header reaches `authorize()` through `next start` and
+Auth.js. The `CredentialsSignin` `code` passthrough (§3) works on this
+Auth.js beta: `signIn()` returns `code: "rate_limited"`, and the login
+page shows the distinct message.
 
 Phase 1 was verified against the real local database with a throwaway
 script (deleted after): 50 concurrent `consume` calls on one key with

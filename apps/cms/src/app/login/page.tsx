@@ -33,7 +33,11 @@ export default function LoginPage() {
     setLoading(false);
 
     if (res?.error) {
-      setError("Invalid email or password.");
+      setError(
+        res.code === "rate_limited"
+          ? "Too many sign-in attempts. Try again in a few minutes."
+          : "Invalid email or password.",
+      );
       return;
     }
 

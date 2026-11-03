@@ -109,6 +109,20 @@ actually deploys.
   (creating pages, uploading media, deleting things), and running them
   against your working dev data would clobber it.
 
+  Playwright doesn't read `.env`, but the seed script does. If `.env`
+  sets `SEED_USER_PASSWORD`, export it into the shell running
+  `playwright test`, or every login fails against the `changeme123`
+  fallback in `e2e/fixtures.ts`. Export only that variable, not
+  `BLOB_READ_WRITE_TOKEN`, unless you mean to run the real Blob
+  upload/delete test.
+
+- **Rate limiting**: login is limited per IP (docs/RATE_LIMIT_PLAN.md),
+  and the suite logs in about 40 times a run. `login()` in
+  `e2e/fixtures.ts` calls `setFakeIp()`, which sends a random
+  `2001:db8::/32` address as `x-forwarded-for`, so each login gets its
+  own buckets. Any new spec that signs in without `login()` should do
+  the same.
+
 ## 3. File layout
 
 ```
