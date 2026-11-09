@@ -4,8 +4,8 @@ Goal: fast unit, component and database-integration tests with Vitest,
 so new logic in this repo can be written test-first, alongside the
 existing Playwright suite.
 
-**Status: phases 1 (unit), 2 (components) and 3 (integration) done.
-Phase 4 (docs wrap-up) not started.**
+**Status: done (2026-11-09). Phases 1 (unit), 2 (components),
+3 (integration) and 4 (docs) all complete.**
 
 Phase 3: 17 integration tests (`consume`, `pruneExpired`,
 `hasPermission`, `requirePermission`, `hasCollectionAccess`,

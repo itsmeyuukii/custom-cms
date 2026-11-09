@@ -121,7 +121,11 @@ correctly at its public URL with real data from the database.
   shell and the admin screens. The real Media upload/delete test only
   runs locally (needs a Vercel Blob token), and visual coverage only
   shows seed data: lists in their empty state, no populated tables or
-  page detail view (see [E2E_TESTING_PLAN.md](E2E_TESTING_PLAN.md) §5)
+  page detail view (see [E2E_TESTING_PLAN.md](E2E_TESTING_PLAN.md) §5).
+  Below Playwright, Vitest covers collection validation/form parsing,
+  block components, the login form, the rate limiter and the RBAC/access
+  checks ([UNIT_TESTING_PLAN.md](UNIT_TESTING_PLAN.md)); admin server
+  actions have no Vitest tests yet (its Open questions)
 - **Sign-out can be undone by in-flight requests (found by the e2e suite,
   unfixed).** Under parallel load, about 1 in 25 sign-outs in a production
   build left the user still logged in: requests already in flight when
@@ -162,12 +166,14 @@ default sequence, not a locked contract.
    [RATE_LIMIT_PLAN.md](RATE_LIMIT_PLAN.md) (P3 item 7 below). Phases 1-3
    (limiter, login, public API) and phase 4 (production check) done.
 
-9. **Unit testing with Vitest** — design in
+9. ~~Unit testing with Vitest~~ — done, 2026-11-09. Design in
    [UNIT_TESTING_PLAN.md](UNIT_TESTING_PLAN.md). Unit, component and
    test-database integration projects, plus a test-first rule for
    `src/lib/` and `src/collections/` in CLAUDE.md. Lands before #3 in
    [SECURITY_REVIEW.md](SECURITY_REVIEW.md) (block data validation) so
-   that fix can be built test-first.
+   that fix can be built test-first. All four phases done (#45-#48):
+   40 unit/component tests in the CI `checks` job, 17 database
+   integration tests in the `e2e` job.
 
 Reasoning for that order, and everything after it, follows.
 
@@ -489,6 +495,8 @@ itself later is still an open question, not a decision made.
 - **An unset GitHub Actions secret expands to an empty string, not to "unset".** `${{ secrets.SEED_USER_PASSWORD }}` with no such secret gives `SEED_USER_PASSWORD=""`, so `process.env.X ?? "fallback"` does _not_ fall back and the seed script hashes an empty password. The e2e job now uses a fixed throwaway value in the workflow instead (its database is destroyed after every run); test code reads it with `||`.
 - **Playwright's `toHaveURL` with a loose regex can pass too early.** `/\/admin\/pages\/[^/]+$/` also matches `/admin/pages/new`, the form the test was still on, so the assertion passed before the submit finished. Exclude the starting URL explicitly (`(?!new$)`).
 - **A Playwright retry silently accepts a missing screenshot baseline.** With the default `updateSnapshots: "missing"`, the first attempt writes the missing PNG (and fails), then the CI retry compares against the file it just wrote and passes, so a visual spec with no committed baseline shows up as "flaky" rather than failed. `playwright.config.ts` sets `updateSnapshots: "none"` under CI. Baselines come from the CI e2e job's `visual-baselines` artifact instead (see [E2E_TESTING_PLAN.md](E2E_TESTING_PLAN.md) §4).
+- **Prisma treats an `undefined` value in `where` as "no filter", not "match nothing".** `prisma.rolePermission.findFirst({ where: { permission: { key: undefined } } })` matches any permission, so `hasPermission(roles, undefined)` returns `true` for any role holding at least one. Found when an integration test built its config before `beforeAll` had created the key. Typed code can't pass `undefined` there, but anything checking access from a runtime value should reject an empty key first (see [UNIT_TESTING_PLAN.md](UNIT_TESTING_PLAN.md) Open questions).
+- **With Vitest `globals` off, Testing Library doesn't unmount between tests.** It only auto-registers `cleanup` when it finds a global `afterEach`, so rendered components pile up in the same document and `getByRole` starts finding duplicates. `vitest.setup.components.ts` calls `cleanup()` in its own `afterEach`.
 
 ---
 
