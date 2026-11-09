@@ -129,6 +129,13 @@ correctly at its public URL with real data from the database.
   block components, the login form, the rate limiter and the RBAC/access
   checks ([UNIT_TESTING_PLAN.md](UNIT_TESTING_PLAN.md)); admin server
   actions have no Vitest tests yet (its Open questions)
+- **Admin validation errors are invisible in production.** Server
+  actions throw on bad input (e.g. invalid block data, "Block data must
+  be valid JSON"), and production builds replace thrown messages with
+  Next's generic "This page couldn't load" screen. Data is protected,
+  but the editor isn't told what was wrong. Fix: return errors from the
+  actions (`useActionState`) across all admin forms (see
+  [BLOCK_VALIDATION_PLAN.md](BLOCK_VALIDATION_PLAN.md) Open questions)
 - **Sign-out can be undone by in-flight requests (found by the e2e suite,
   unfixed).** Under parallel load, about 1 in 25 sign-outs in a production
   build left the user still logged in: requests already in flight when
@@ -178,11 +185,11 @@ default sequence, not a locked contract.
    40 unit/component tests in the CI `checks` job, 17 database
    integration tests in the `e2e` job.
 
-10. **Block data validation** ([SECURITY_REVIEW.md](SECURITY_REVIEW.md)
+10. ~~Block data validation~~ — done, 2026-11-09 ([SECURITY_REVIEW.md](SECURITY_REVIEW.md)
     #3) — design in [BLOCK_VALIDATION_PLAN.md](BLOCK_VALIDATION_PLAN.md).
     Ajv against each component's JSON Schema, treated as closed, with
     a 64 KB cap, for both page blocks and collection `blocks` fields.
-    Built test-first on the Vitest setup from item 9.
+    Built test-first on the Vitest setup from item 9 (#50-#54).
 
 Reasoning for that order, and everything after it, follows.
 

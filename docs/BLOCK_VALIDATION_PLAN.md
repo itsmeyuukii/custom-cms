@@ -5,8 +5,15 @@ component's JSON Schema, has no props the schema doesn't declare, and is
 under a size cap. Closes [SECURITY_REVIEW.md](SECURITY_REVIEW.md)
 finding #3.
 
-**Status: phases 1 (validator), 2 (pages) and 3 (collections) done.
-Phase 4 (audit + docs) not started.**
+**Status: done (2026-11-09). All four phases complete.**
+
+Phase 4 (audit): a throwaway read-only script (deleted after) ran every
+existing page `Block` through `validateBlockData` against the local dev
+database: 1 block, 0 failing. No registered collection has `blocks` or
+`array` fields, so there were no collection blocks to check.
+Production's public API (`/api/v1/pages`) lists 0 published pages,
+so no live page can be broken by older data; drafts there can't be
+checked without the production connection string.
 
 Phase 3: `assertValidBlocks` in `src/collections/blocks.ts` walks a
 document's `blocks` fields, including ones nested in `array` fields,
@@ -203,13 +210,11 @@ wiring is covered end to end.
 
 ## Open questions
 
-- **Rendering existing bad data:** validation only protects new writes.
-  If the audit finds bad rows, the options are fixing the data or
-  having `BlockRenderer` skip a block whose data fails validation, at a
-  per-request cost. Decide once the audit says whether it matters.
-- **Production audit:** phase 4 runs against the local dev database.
-  Auditing production needs its connection string; worth doing once
-  before marking #3 fixed if production has hand-entered pages.
+- ~~**Rendering existing bad data**~~ — not needed now: the audit found
+  no failing blocks. Revisit only if older bad data turns up.
+- **Production drafts:** phase 4 checked the local database and the
+  public API (no published pages). Production drafts need the
+  connection string to check, and matter only once one is published.
 - **Editing and reordering blocks:** only `addBlock` writes block data
   today. Any future "edit block" action must call `assertValidBlock`
   too.
