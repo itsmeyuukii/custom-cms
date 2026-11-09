@@ -152,6 +152,31 @@ npm run dev
 Then: `/login` to sign in (seeded admin: `admin@example.com` /
 `changeme123`), `/admin` for the dashboard.
 
+## 10. Run the tests
+
+Inside `apps/cms/`:
+
+```bash
+npm run test         # unit + component tests, no database needed
+npm run test:watch   # same, re-running on every save (the test-first loop)
+```
+
+The database integration tests (`*.int.test.ts`, see
+[UNIT_TESTING_PLAN.md](UNIT_TESTING_PLAN.md) §4) need a separate
+database whose name ends in `_test`. They refuse to run against anything
+else, including the dev database in `.env`. Create it once (the e2e
+suite uses the same one), migrate it, then point `DATABASE_URL` at it
+for the run:
+
+```bash
+createdb custom_cms_test
+DATABASE_URL="postgresql://USER:PASSWORD@localhost:5432/custom_cms_test" npx prisma migrate deploy
+DATABASE_URL="postgresql://USER:PASSWORD@localhost:5432/custom_cms_test" npm run test:int
+```
+
+The tests create their own uniquely named rows and delete them
+afterwards, so they don't disturb data the e2e suite relies on.
+
 ---
 
 ## Full dependency list this produced

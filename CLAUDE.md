@@ -133,6 +133,12 @@ suffix picks the project (see `docs/UNIT_TESTING_PLAN.md` §2). Run
   write the code.
 - **Every bug fix starts with a failing test** that reproduces it, at
   the lowest layer that can (unit before Playwright).
+- Logic whose correctness is SQL (rate limiter, RBAC lookups) is tested
+  against a real database in `*.int.test.ts`, not a mocked Prisma
+  client: `npm run test:int` with `DATABASE_URL` pointing at a `*_test`
+  database (it refuses anything else; see `docs/INSTALLATION.md` §10).
+  Create uniquely named rows and delete them afterwards (helpers in
+  `src/test/`).
 - UI-only and page-level changes keep relying on Playwright (`e2e/`).
 - Tests import `describe`/`it`/`expect` from `vitest` (no globals).
 

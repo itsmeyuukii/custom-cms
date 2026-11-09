@@ -62,6 +62,9 @@ jobs:
         working-directory: apps/cms
       - run: npx prisma migrate deploy
         working-directory: apps/cms
+      # Before seeding, so the visual specs still see seed-only data.
+      - run: npm run test:int
+        working-directory: apps/cms
       - run: npm run db:seed
         working-directory: apps/cms
       - run: npx playwright install --with-deps chromium

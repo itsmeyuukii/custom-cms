@@ -10,6 +10,7 @@
     "typecheck": "tsc --noEmit",
     "test": "vitest run --project unit --project components",
     "test:watch": "vitest --project unit --project components",
+    "test:int": "vitest run --project integration",
     "e2e": "playwright test --project=chromium",
     "e2e:visual": "playwright test --project=visual",
     "prisma:generate": "prisma generate",

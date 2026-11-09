@@ -26,6 +26,17 @@ export default defineConfig({
           setupFiles: ["./vitest.setup.components.ts"],
         },
       },
+      {
+        extends: true,
+        test: {
+          name: "integration",
+          environment: "node",
+          include: ["src/**/*.int.test.ts"],
+          globalSetup: ["./vitest.setup.integration.ts"],
+          // Files share tables (RateLimit, Role, Permission).
+          fileParallelism: false,
+        },
+      },
     ],
   },
 });
