@@ -5,7 +5,16 @@ component's JSON Schema, has no props the schema doesn't declare, and is
 under a size cap. Closes [SECURITY_REVIEW.md](SECURITY_REVIEW.md)
 finding #3.
 
-**Status: design only, nothing implemented yet.**
+**Status: phase 1 (validator) done. Phases 2-4 not started.**
+
+Phase 1: `closeSchema` and `validateBlockData` in
+`src/lib/block-validation.ts`, with 12 unit tests written first
+against the seeded Hero and Card Grid schemas. As a mutation check,
+compiling without `closeSchema` made exactly the two unknown-property
+tests fail. Errors are sorted so `allErrors` output has a stable order.
+Note: a plain `npm install ajv` in this workspace resolved to Ajv 6
+(already in the tree via ESLint), so the dependency is pinned to
+`^8.20.0`.
 
 ## The problem, concretely
 
