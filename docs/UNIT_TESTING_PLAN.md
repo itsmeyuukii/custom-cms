@@ -297,11 +297,9 @@ New section in CLAUDE.md, landed in phase 1:
   `revalidatePath`/`redirect`, which need Next's request context.
   Revisit when the first action-level bug shows up; Playwright covers
   them today.
-- **`hasPermission` with an `undefined` key** (found writing phase 3): a
-  test that accidentally passed `undefined` as the key got `true`,
-  because Prisma treats `where: { permission: { key: undefined } }` as
-  no filter, so any permission the role holds matches. The `string`
-  type rules this out at compile time, but a config read at runtime
-  (or a cast) could still reach it. A one-line guard in
-  `roleSlugsHavePermission` (`if (!key) return false`) would close it,
-  test-first, as its own `fix:` PR.
+- ~~**`hasPermission` with an `undefined` key**~~ — fixed (found writing
+  phase 3): Prisma treats `where: { permission: { key: undefined } }` as
+  no filter, so any permission the role held matched, and
+  `requirePermission(undefined)` returned the session. Fixed test-first:
+  two new `rbac.int.test.ts` cases failed, then passed after
+  `roleSlugsHavePermission` started rejecting an empty key.
