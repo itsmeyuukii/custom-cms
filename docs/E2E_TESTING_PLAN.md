@@ -8,7 +8,9 @@ this project has relied on so far.
 **Status: all six phases are done**: infrastructure (#17), auth & RBAC
 suite (#36), Pages & Media CRUD (#37), and visual baselines for login,
 admin shell and the admin screens (#38). See §5 for what each phase
-covers, and the Open questions for what's still undecided.
+covers, and the Open questions for what's still undecided. The layer
+below (single functions, components and database queries, in Vitest)
+is covered by [UNIT_TESTING_PLAN.md](UNIT_TESTING_PLAN.md).
 
 See [PROJECT_PLAN.md](PROJECT_PLAN.md) §4 ("No automated tests" — the
 gap this closes) and [ADMIN_THEME_PLAN.md](ADMIN_THEME_PLAN.md) (the
