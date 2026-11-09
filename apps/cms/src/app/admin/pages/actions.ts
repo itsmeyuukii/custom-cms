@@ -2,6 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
+import { assertValidBlock } from "@/lib/block-validation";
 import { requirePermission } from "@/lib/rbac";
 import { prisma } from "@/lib/prisma";
 
@@ -37,6 +38,10 @@ export async function addBlock(pageId: string, formData: FormData) {
   } catch {
     throw new Error("Block data must be valid JSON");
   }
+
+  // Against the component's schema, before anything is written
+  // (docs/BLOCK_VALIDATION_PLAN.md).
+  await assertValidBlock({ id: componentId }, data);
 
   const lastBlock = await prisma.block.findFirst({
     where: { pageId },
