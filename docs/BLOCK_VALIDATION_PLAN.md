@@ -18,8 +18,10 @@ missing). One change from §3: the check is its own module rather than
 an exported async `parseDocumentData`, because every export of a
 `"use server"` file (`actions.ts`) becomes a callable server action
 endpoint. No registered collection has a `blocks` field yet, so this
-path can't be exercised from the admin today; the Posts create/update
-e2e tests confirm the actions still work with the extra step.
+path can't be exercised from the admin today. A new Playwright test,
+`e2e/posts.spec.ts` (the first e2e test to write a collection document
+at all), creates and edits a Post through the admin, confirming both
+actions still work with the extra step.
 
 Phase 2: `assertValidBlock` (by component id or key) runs in `addBlock`
 before the insert. Test-first at both layers: three integration tests
