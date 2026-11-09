@@ -12,7 +12,7 @@ attack surface not covered here.
 | --- | -------------------------------------------------------------------------------------- | ------------ | --------------------------------------------------------------------- |
 | 1   | Missing authorization on `addBlock` / `setPageStatus` server actions                   | **Critical** | **Fixed** (2026-09-15)                                                |
 | 2   | `Role` (ADMIN/EDITOR/VIEWER) is never actually enforced anywhere                       | **High**     | **Fixed** (2026-09-15)                                                |
-| 3   | Block `data` accepted with no validation against its Component's schema, no size limit | Medium       | Open                                                                  |
+| 3   | Block `data` accepted with no validation against its Component's schema, no size limit | Medium       | **Fixed** (2026-11-09)                                                |
 | 4   | No rate limiting on login                                                              | Medium       | **Fixed** (2026-11-03)                                                |
 | 5   | Seeded admin password is weak and documented in plaintext                              | Medium       | Open — expected for local dev, must rotate before any shared/prod use |
 | 6   | 4 high-severity advisories in Prisma CLI's transitive deps (`mysql2`, `deepmerge-ts`)  | Low          | Open, dev-tooling only                                                |
@@ -115,6 +115,16 @@ so a large payload can be written straight into Postgres.
 generalizes this properly); at minimum, cap payload size and wrap render
 in error boundaries.
 
+**Fixed (2026-11-09):** every block write (`addBlock`, and collection
+`blocks` fields on create/update) now validates `data` with Ajv against
+the component's JSON Schema, treated as closed (props the schema
+doesn't declare are rejected), with a 64 KB cap, and rejects unknown
+components. See [BLOCK_VALIDATION_PLAN.md](BLOCK_VALIDATION_PLAN.md).
+The one block in the local dev database passes; production has no
+published pages, so no live page can be broken by older data. Error
+boundaries weren't added: with validation on write there's no known
+bad data to guard against (see that plan's Open questions).
+
 ## 4. No rate limiting on login — Medium
 
 **File:** [src/lib/auth.ts](../src/lib/auth.ts) (Credentials provider),
@@ -199,7 +209,9 @@ per finding #2).
 
 _Findings #1 and #2 (the ones that mattered most — they meant the `Role`
 model this app is built around wasn't actually providing any protection)
-are fixed as of 2026-09-15, and #4 (login rate limiting) as of
-2026-11-03. Next worth doing: #3 (block data validation) — see
+are fixed as of 2026-09-15, #4 (login rate limiting) as of 2026-11-03,
+and #3 (block data validation) as of 2026-11-09. Next worth doing: #5
+(rotate the seeded admin password in production) and #7 (security
+headers) — see
 [PROJECT_PLAN.md](PROJECT_PLAN.md) §5 for how these fit into the overall
 roadmap._
