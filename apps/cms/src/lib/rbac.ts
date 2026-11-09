@@ -12,7 +12,9 @@ async function roleSlugsHavePermission(
   roleSlugs: string[],
   key: string,
 ): Promise<boolean> {
-  if (roleSlugs.length === 0) return false;
+  // Prisma ignores `undefined` in a `where`, so a missing key would match
+  // any permission the roles hold. Fail closed instead.
+  if (!key || roleSlugs.length === 0) return false;
 
   const allowed = await prisma.rolePermission.findFirst({
     where: {

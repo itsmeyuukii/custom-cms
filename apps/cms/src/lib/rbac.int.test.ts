@@ -57,6 +57,27 @@ describe("hasPermission", () => {
     expect(await hasPermission([], key)).toBe(false);
     expect(await hasPermission(undefined, key)).toBe(false);
   });
+
+  // Prisma drops `undefined` from a `where`, which would turn the lookup
+  // into "does this role hold any permission at all". Typed callers can't
+  // pass these, but a key read from runtime config could.
+  it("is false for an empty or missing key, even for a role with permissions", async () => {
+    expect(await hasPermission([granted], "")).toBe(false);
+    expect(await hasPermission([granted], undefined as unknown as string)).toBe(
+      false,
+    );
+  });
+});
+
+describe("requirePermission with an empty or missing key", () => {
+  it("throws even for a session whose role has permissions", async () => {
+    auth.mockResolvedValue(session([granted]));
+
+    await expect(requirePermission("")).rejects.toThrow("Forbidden");
+    await expect(
+      requirePermission(undefined as unknown as string),
+    ).rejects.toThrow("Forbidden");
+  });
 });
 
 describe("requirePermission", () => {
