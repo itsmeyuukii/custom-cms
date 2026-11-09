@@ -5,8 +5,23 @@ component's JSON Schema, has no props the schema doesn't declare, and is
 under a size cap. Closes [SECURITY_REVIEW.md](SECURITY_REVIEW.md)
 finding #3.
 
-**Status: phases 1 (validator) and 2 (pages) done. Phases 3-4 not
-started.**
+**Status: phases 1 (validator), 2 (pages) and 3 (collections) done.
+Phase 4 (audit + docs) not started.**
+
+Phase 3: `assertValidBlocks` in `src/collections/blocks.ts` walks a
+document's `blocks` fields, including ones nested in `array` fields,
+and runs `assertValidBlock({ key })` on each item, with errors prefixed
+by the block's path (`sections.1.content.0: Invalid data for ...`).
+`createDocument` and `updateDocument` call it right after Zod. Five
+integration tests were written first (they failed with the module
+missing). One change from §3: the check is its own module rather than
+an exported async `parseDocumentData`, because every export of a
+`"use server"` file (`actions.ts`) becomes a callable server action
+endpoint. No registered collection has a `blocks` field yet, so this
+path can't be exercised from the admin today. A new Playwright test,
+`e2e/posts.spec.ts` (the first e2e test to write a collection document
+at all), creates and edits a Post through the admin, confirming both
+actions still work with the extra step.
 
 Phase 2: `assertValidBlock` (by component id or key) runs in `addBlock`
 before the insert. Test-first at both layers: three integration tests

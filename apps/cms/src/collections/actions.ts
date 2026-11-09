@@ -9,6 +9,7 @@
 
 import type { ContentStatus, Prisma } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
+import { assertValidBlocks } from "./blocks";
 import { collectionToZod } from "./validation";
 import { getCollectionConfig } from "./registry";
 import { requireCollectionAccess } from "./access";
@@ -67,6 +68,7 @@ export async function createDocument(collectionSlug: string, input: unknown) {
   const session = await requireCollectionAccess(config, "create");
 
   const data = parseDocumentData(config, input);
+  await assertValidBlocks(config, data);
   await assertUniqueFields(config, data);
 
   return prisma.document.create({
@@ -85,6 +87,7 @@ export async function updateDocument(id: string, input: unknown) {
   await requireCollectionAccess(config, "update");
 
   const data = parseDocumentData(config, input);
+  await assertValidBlocks(config, data);
   await assertUniqueFields(config, data, id);
 
   return prisma.document.update({
