@@ -5,7 +5,18 @@ component's JSON Schema, has no props the schema doesn't declare, and is
 under a size cap. Closes [SECURITY_REVIEW.md](SECURITY_REVIEW.md)
 finding #3.
 
-**Status: phase 1 (validator) done. Phases 2-4 not started.**
+**Status: phases 1 (validator) and 2 (pages) done. Phases 3-4 not
+started.**
+
+Phase 2: `assertValidBlock` (by component id or key) runs in `addBlock`
+before the insert. Test-first at both layers: three integration tests
+against a throwaway `Component` failed with the function missing, and
+the new Playwright test (Hero data with no `heading` and an `onClick`)
+failed against a local production build because the block was saved.
+After the change both pass, and the full functional suite passes
+locally (19 passed, 1 skipped, with `--workers=2`: at the default 8
+workers, logins on this machine timed out before redirecting, unrelated
+to this change).
 
 Phase 1: `closeSchema` and `validateBlockData` in
 `src/lib/block-validation.ts`, with 12 unit tests written first
@@ -191,3 +202,11 @@ wiring is covered end to end.
   today. If an admin UI for them is ever built, it should compile the
   schema with Ajv on save, so a broken schema is rejected there rather
   than at the first block write.
+- **Validation errors are invisible in production.** A rejected block
+  (like every other error thrown from an admin server action, e.g.
+  "Block data must be valid JSON") shows Next's generic "This page
+  couldn't load. A server error occurred." screen with an error digest,
+  because production builds strip thrown messages. Data is protected,
+  but the editor isn't told what was wrong. Fixing that means returning
+  errors from the actions (`useActionState`) instead of throwing, across
+  all admin forms: a separate change.

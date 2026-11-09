@@ -4,6 +4,7 @@
 // it's ever written. Shared by page blocks and collection `blocks` fields.
 
 import Ajv, { type ErrorObject, type ValidateFunction } from "ajv";
+import { prisma } from "@/lib/prisma";
 
 export const MAX_BLOCK_DATA_BYTES = 64 * 1024;
 
@@ -98,4 +99,28 @@ export function validateBlockData(
 
   const message = (validate.errors ?? []).map(describeError).sort().join("; ");
   return { ok: false, message };
+}
+
+/**
+ * Loads the component (by id or key) and validates `data` against its
+ * schema. Throws a readable error on any failure, including an unknown
+ * component, so server actions can call it right before writing.
+ */
+export async function assertValidBlock(
+  component: { id: string } | { key: string },
+  data: unknown,
+): Promise<void> {
+  const found = await prisma.component.findUnique({
+    where: component,
+    select: { key: true, schema: true },
+  });
+  if (!found) {
+    const ref = "id" in component ? component.id : component.key;
+    throw new Error(`Unknown component "${ref}"`);
+  }
+
+  const result = validateBlockData(found.schema, data);
+  if (!result.ok) {
+    throw new Error(`Invalid data for "${found.key}": ${result.message}`);
+  }
 }

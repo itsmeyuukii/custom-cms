@@ -54,6 +54,30 @@ test.describe("pages", () => {
     expect((await page.request.get(`/${slug}`)).status()).toBe(404);
   });
 
+  test("a block whose data doesn't match its component's schema is not added", async ({
+    page,
+  }) => {
+    const slug = `e2e-invalid-block-${Date.now()}`;
+
+    await loginAndWait(page, "editor");
+    await page.goto("/admin/pages/new");
+    await page.getByLabel("Title").fill(`E2E ${slug}`);
+    await page.getByLabel("Slug").fill(slug);
+    await page.getByRole("button", { name: "Create" }).click();
+    await expect(page).toHaveURL(/\/admin\/pages\/(?!new$)[^/]+$/);
+    const pageUrl = page.url();
+
+    // Hero requires `heading`, and `onClick` isn't one of its props.
+    await page.getByLabel("Component").selectOption({ label: "Hero" });
+    await page
+      .getByLabel("Data (JSON)")
+      .fill(JSON.stringify({ subheading: "no heading", onClick: "x" }));
+    await page.getByRole("button", { name: "Add Block" }).click();
+
+    await page.goto(pageUrl);
+    await expect(page.getByText("No blocks yet.")).toBeVisible();
+  });
+
   test("viewer can open a page but has no write controls", async ({
     browser,
   }) => {
