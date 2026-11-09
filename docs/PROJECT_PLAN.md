@@ -37,7 +37,10 @@ permissions to),
 [RATE_LIMIT_PLAN.md](RATE_LIMIT_PLAN.md) (design for Postgres-backed
 rate limiting on login and the public API),
 [UNIT_TESTING_PLAN.md](UNIT_TESTING_PLAN.md) (design for Vitest unit,
-component and test-database integration tests, and the test-first rule)
+component and test-database integration tests, and the test-first rule),
+[BLOCK_VALIDATION_PLAN.md](BLOCK_VALIDATION_PLAN.md) (design for
+validating block data against its component's JSON Schema, for
+SECURITY_REVIEW #3)
 
 ---
 
@@ -174,6 +177,12 @@ default sequence, not a locked contract.
    that fix can be built test-first. All four phases done (#45-#48):
    40 unit/component tests in the CI `checks` job, 17 database
    integration tests in the `e2e` job.
+
+10. **Block data validation** ([SECURITY_REVIEW.md](SECURITY_REVIEW.md)
+    #3) — design in [BLOCK_VALIDATION_PLAN.md](BLOCK_VALIDATION_PLAN.md).
+    Ajv against each component's JSON Schema, treated as closed, with
+    a 64 KB cap, for both page blocks and collection `blocks` fields.
+    Built test-first on the Vitest setup from item 9.
 
 Reasoning for that order, and everything after it, follows.
 
