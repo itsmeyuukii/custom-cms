@@ -1,8 +1,10 @@
 // Vitest projects are picked by file suffix (docs/UNIT_TESTING_PLAN.md §2).
 // Playwright owns e2e/; everything here lives under src/.
+import react from "@vitejs/plugin-react";
 import { defineConfig } from "vitest/config";
 
 export default defineConfig({
+  plugins: [react()],
   resolve: { tsconfigPaths: true },
   test: {
     projects: [
@@ -13,6 +15,15 @@ export default defineConfig({
           environment: "node",
           include: ["src/**/*.test.ts"],
           exclude: ["src/**/*.int.test.ts"],
+        },
+      },
+      {
+        extends: true,
+        test: {
+          name: "components",
+          environment: "jsdom",
+          include: ["src/**/*.test.tsx"],
+          setupFiles: ["./vitest.setup.components.ts"],
         },
       },
     ],

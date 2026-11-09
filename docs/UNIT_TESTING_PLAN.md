@@ -4,7 +4,16 @@ Goal: fast unit, component and database-integration tests with Vitest,
 so new logic in this repo can be written test-first, alongside the
 existing Playwright suite.
 
-**Status: phase 1 (setup + unit project) done. Phases 2-4 not started.**
+**Status: phases 1 (setup + unit project) and 2 (components project)
+done. Phases 3-4 not started.**
+
+Phase 2: 10 component tests (`Hero`, `CardGrid`, `BlockRenderer`, the
+login page) in jsdom, run by the same `npm run test`. The login tests
+mock `next-auth/react` and `next/navigation` and drive the real form
+with `user-event`. As a check that they can fail, temporarily changing
+the page's `rate_limited` comparison failed exactly the rate-limit
+test. The setup file calls Testing Library's `cleanup` itself, since
+with `globals` off it can't register its own `afterEach`.
 
 Phase 1: 30 unit tests across `src/collections/` (validation, form
 parsing, serialization) and `src/lib/` (API envelope, `clientIp`), run
