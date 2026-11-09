@@ -4,8 +4,20 @@ Goal: fast unit, component and database-integration tests with Vitest,
 so new logic in this repo can be written test-first, alongside the
 existing Playwright suite.
 
-**Status: phases 1 (setup + unit project) and 2 (components project)
-done. Phases 3-4 not started.**
+**Status: phases 1 (unit), 2 (components) and 3 (integration) done.
+Phase 4 (docs wrap-up) not started.**
+
+Phase 3: 17 integration tests (`consume`, `pruneExpired`,
+`hasPermission`, `requirePermission`, `hasCollectionAccess`,
+`hasReadAccess`, `requireCollectionAccess`) run by `npm run test:int`
+against the local `custom_cms_test` database and, in CI, in the `e2e`
+job right after `prisma migrate deploy` and before seeding. With
+`DATABASE_URL` pointing at the dev database the guard stopped the run
+(`got "custom_cms"`). After two runs, no `test-`/`test:` roles,
+permissions or rate-limit rows were left. The 50-concurrent-calls check
+from RATE_LIMIT_PLAN.md phase 1 is now one of these tests. Shared
+helpers for throwaway roles and permissions live in
+`src/test/rbac-fixtures.ts`.
 
 Phase 2: 10 component tests (`Hero`, `CardGrid`, `BlockRenderer`, the
 login page) in jsdom, run by the same `npm run test`. The login tests
@@ -285,3 +297,11 @@ New section in CLAUDE.md, landed in phase 1:
   `revalidatePath`/`redirect`, which need Next's request context.
   Revisit when the first action-level bug shows up; Playwright covers
   them today.
+- **`hasPermission` with an `undefined` key** (found writing phase 3): a
+  test that accidentally passed `undefined` as the key got `true`,
+  because Prisma treats `where: { permission: { key: undefined } }` as
+  no filter, so any permission the role holds matches. The `string`
+  type rules this out at compile time, but a config read at runtime
+  (or a cast) could still reach it. A one-line guard in
+  `roleSlugsHavePermission` (`if (!key) return false`) would close it,
+  test-first, as its own `fix:` PR.
