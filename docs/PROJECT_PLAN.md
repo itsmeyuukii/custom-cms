@@ -40,7 +40,9 @@ rate limiting on login and the public API),
 component and test-database integration tests, and the test-first rule),
 [BLOCK_VALIDATION_PLAN.md](BLOCK_VALIDATION_PLAN.md) (design for
 validating block data against its component's JSON Schema, for
-SECURITY_REVIEW #3)
+SECURITY_REVIEW #3),
+[FORM_ERRORS_PLAN.md](FORM_ERRORS_PLAN.md) (design for showing admin
+form errors to editors instead of a generic error screen)
 
 ---
 
@@ -135,7 +137,8 @@ correctly at its public URL with real data from the database.
   Next's generic "This page couldn't load" screen. Data is protected,
   but the editor isn't told what was wrong. Fix: return errors from the
   actions (`useActionState`) across all admin forms (see
-  [BLOCK_VALIDATION_PLAN.md](BLOCK_VALIDATION_PLAN.md) Open questions)
+  [BLOCK_VALIDATION_PLAN.md](BLOCK_VALIDATION_PLAN.md) Open questions;
+  planned in [FORM_ERRORS_PLAN.md](FORM_ERRORS_PLAN.md))
 - **Sign-out can be undone by in-flight requests (found by the e2e suite,
   unfixed).** Under parallel load, about 1 in 25 sign-outs in a production
   build left the user still logged in: requests already in flight when
@@ -190,6 +193,10 @@ default sequence, not a locked contract.
     Ajv against each component's JSON Schema, treated as closed, with
     a 64 KB cap, for both page blocks and collection `blocks` fields.
     Built test-first on the Vitest setup from item 9 (#50-#54).
+11. **Admin form errors** — design in
+    [FORM_ERRORS_PLAN.md](FORM_ERRORS_PLAN.md). Expected errors become
+    `UserError`s returned to the form via `useActionState`, so editors
+    see why a save failed and keep their input (closes the §4 gap).
 
 Reasoning for that order, and everything after it, follows.
 
