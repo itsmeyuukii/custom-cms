@@ -4,7 +4,21 @@ Goal: when an admin form is rejected (invalid block data, a duplicate
 slug, a role change that would lock everyone out), the editor sees the
 reason next to the form, and keeps what they typed.
 
-**Status: design only, nothing implemented yet.**
+**Status: phase 1 (core) done. Phases 2-4 not started.**
+
+Phase 1: `UserError` and `toFormState` (`src/lib/form-errors.ts`, 7
+unit tests) and `ActionForm` (`src/components/ui/action-form.tsx`, 5
+component tests), all written first. Two findings shaped the code:
+
+- With `@prisma/adapter-pg`, a unique violation (`P2002`) has no
+  `meta.target`, only the constraint name
+  (`meta.driverAdapterError.cause.constraint.index`, e.g.
+  `Role_slug_key`), confirmed by triggering one on the test database.
+  `toFormState` reads the field from that name, so a duplicate role
+  name says "That name is already in use", not "slug".
+- Switching `ActionForm` to a plain `<form action>` made exactly the
+  two "keeps what was typed" tests fail, confirming React's automatic
+  reset that the `onSubmit` submit avoids.
 
 ## The problem
 
@@ -38,7 +52,7 @@ and to throw only for genuinely unexpected failures.
   (`Forbidden`, Prisma failures, bugs) is rethrown and keeps hitting the
   error screen, so no internal message can leak by accident. The one
   translated exception: a Prisma unique-constraint violation (`P2002`)
-  becomes "That slug is already in use", since a duplicate slug is the
+  becomes "That <field> is already in use" (e.g. slug), since a duplicate is the
   most common expected error and today surfaces as a raw Prisma error.
 - **Inputs survive a rejected submit.** React 19 resets a `<form
 action>` after every submission, which would wipe a long JSON block on
