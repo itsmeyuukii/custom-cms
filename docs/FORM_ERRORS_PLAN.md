@@ -4,8 +4,16 @@ Goal: when an admin form is rejected (invalid block data, a duplicate
 slug, a role change that would lock everyone out), the editor sees the
 reason next to the form, and keeps what they typed.
 
-**Status: phases 1 (core), 2 (pages, collections) and 3 (roles, users,
-media) done. Phase 4 (fallback + docs) not started.**
+**Status: done (2026-11-11). All four phases complete.**
+
+Phase 4: `src/app/admin/error.tsx` catches unexpected admin errors
+inside the admin layout (the sidebar stays usable): a plain message,
+the error's digest as a reference for the server logs, and a "Try
+again" button wired to Next 16's `retry` prop (not the older `reset`).
+It never shows the error's own message. Four component tests and a
+Playwright test (deleting the same post from two tabs; the second
+delete hits a missing record) were written first and failed against
+the previous build. Full local functional suite: 25 passed, 1 skipped.
 
 Phase 3: `createRole`, `updateRole`, `updateUserRoles` and `uploadMedia`
 return `toFormState(...)` and their forms are `ActionForm`s (media

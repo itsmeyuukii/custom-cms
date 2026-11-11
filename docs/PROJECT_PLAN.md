@@ -131,14 +131,6 @@ correctly at its public URL with real data from the database.
   block components, the login form, the rate limiter and the RBAC/access
   checks ([UNIT_TESTING_PLAN.md](UNIT_TESTING_PLAN.md)); admin server
   actions have no Vitest tests yet (its Open questions)
-- **Admin validation errors are invisible in production.** Server
-  actions throw on bad input (e.g. invalid block data, "Block data must
-  be valid JSON"), and production builds replace thrown messages with
-  Next's generic "This page couldn't load" screen. Data is protected,
-  but the editor isn't told what was wrong. Fix: return errors from the
-  actions (`useActionState`) across all admin forms (see
-  [BLOCK_VALIDATION_PLAN.md](BLOCK_VALIDATION_PLAN.md) Open questions;
-  planned in [FORM_ERRORS_PLAN.md](FORM_ERRORS_PLAN.md))
 - **Sign-out can be undone by in-flight requests (found by the e2e suite,
   unfixed).** Under parallel load, about 1 in 25 sign-outs in a production
   build left the user still logged in: requests already in flight when
@@ -193,10 +185,11 @@ default sequence, not a locked contract.
     Ajv against each component's JSON Schema, treated as closed, with
     a 64 KB cap, for both page blocks and collection `blocks` fields.
     Built test-first on the Vitest setup from item 9 (#50-#54).
-11. **Admin form errors** — design in
+11. ~~Admin form errors~~ — done, 2026-11-11 (#55-#59). Design in
     [FORM_ERRORS_PLAN.md](FORM_ERRORS_PLAN.md). Expected errors become
     `UserError`s returned to the form via `useActionState`, so editors
-    see why a save failed and keep their input (closes the §4 gap).
+    see why a save failed and keep their input; unexpected errors get a
+    readable `admin/error.tsx` screen.
 
 Reasoning for that order, and everything after it, follows.
 
@@ -520,6 +513,10 @@ itself later is still an open question, not a decision made.
 - **A Playwright retry silently accepts a missing screenshot baseline.** With the default `updateSnapshots: "missing"`, the first attempt writes the missing PNG (and fails), then the CI retry compares against the file it just wrote and passes, so a visual spec with no committed baseline shows up as "flaky" rather than failed. `playwright.config.ts` sets `updateSnapshots: "none"` under CI. Baselines come from the CI e2e job's `visual-baselines` artifact instead (see [E2E_TESTING_PLAN.md](E2E_TESTING_PLAN.md) §4).
 - **Prisma treats an `undefined` value in `where` as "no filter", not "match nothing".** `prisma.rolePermission.findFirst({ where: { permission: { key: undefined } } })` matches any permission, so `hasPermission(roles, undefined)` returns `true` for any role holding at least one. Found when an integration test built its config before `beforeAll` had created the key. Typed code can't pass `undefined` there, but a runtime value could, so `roleSlugsHavePermission` in `src/lib/rbac.ts` now returns `false` for an empty key, covered by `rbac.int.test.ts`. Any other query built from a value that might be missing needs the same guard.
 - **With Vitest `globals` off, Testing Library doesn't unmount between tests.** It only auto-registers `cleanup` when it finds a global `afterEach`, so rendered components pile up in the same document and `getByRole` starts finding duplicates. `vitest.setup.components.ts` calls `cleanup()` in its own `afterEach`.
+- **With `@prisma/adapter-pg`, a unique-constraint error (`P2002`) has no `meta.target`.** The usual way to tell which field collided is missing; the only trace is the constraint name under `meta.driverAdapterError.cause.constraint.index` (e.g. `Role_slug_key`). `toFormState` in `src/lib/form-errors.ts` reads the field from there.
+- **React 19 resets a form after every action it runs, including a failed one,** so a `<form action>` wipes what the editor typed exactly when the server rejects it. `ActionForm` submits through `onSubmit` + `preventDefault()` + `startTransition` instead, but still sets `action`: without it React renders none of the hidden progressive-enhancement fields, which the RBAC replay test (SECURITY_REVIEW #1) relies on to call the action directly as a viewer.
+- **Next renders its own `role="alert"` element (the route announcer)** on every page, so `getByRole("alert")` finds two. Scope form-error assertions: `getByRole("main").getByRole("alert")`.
+- **Next 16's `error.tsx` gets `retry`, not `reset`.** Older examples (and training data) use `reset`; the bundled docs under `node_modules/next/dist/docs/` are the source of truth here, as `apps/cms/AGENTS.md` warns.
 
 ---
 
