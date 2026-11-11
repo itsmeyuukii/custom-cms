@@ -1,6 +1,7 @@
 import { redirect } from "next/navigation";
 import { auth } from "@/lib/auth";
 import { hasPermission } from "@/lib/rbac";
+import { ActionForm } from "@/components/ui/action-form";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Field, FieldGroup, Label } from "@/components/ui/fieldset";
@@ -14,7 +15,7 @@ export default async function NewPage() {
   return (
     <div className="max-w-md">
       <h1 className="text-2xl font-semibold text-zinc-900">New Page</h1>
-      <form action={createPage} className="mt-6">
+      <ActionForm action={createPage} className="mt-6">
         <FieldGroup>
           <Field>
             <Label htmlFor="title">Title</Label>
@@ -34,7 +35,7 @@ export default async function NewPage() {
         <Button type="submit" className="mt-6">
           Create
         </Button>
-      </form>
+      </ActionForm>
     </div>
   );
 }

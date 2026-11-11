@@ -2,24 +2,34 @@ import { expect, test, type Page } from "@playwright/test";
 import { loginAndWait } from "./fixtures";
 
 /**
- * Reads the Server Action id that the "New Page" form is bound to, so a
- * test can replay the action with a different session's cookies - the
- * point being to prove the server rejects it, not just that the UI hides
- * the button.
+ * Reads the hidden fields React renders into the "New Page" form to bind
+ * it to its Server Action (their names depend on how the action is wired,
+ * e.g. `$ACTION_ID_...` or `$ACTION_REF_...`), so a test can replay the
+ * action with a different session's cookies - the point being to prove
+ * the server rejects it, not just that the UI hides the button.
  */
-async function createPageActionField(page: Page) {
+async function createPageActionFields(page: Page) {
   await page.goto("/admin/pages/new");
-  const name = await page
-    .locator('input[type="hidden"][name^="$ACTION_ID_"]')
-    .first()
-    .getAttribute("name");
-  expect(name).toBeTruthy();
-  return name as string;
+  const fields = await page
+    .locator('form:has(input[name="slug"]) input[type="hidden"]')
+    .evaluateAll((inputs) =>
+      Object.fromEntries(
+        (inputs as HTMLInputElement[]).map((i) => [i.name, i.value]),
+      ),
+    );
+  expect(Object.keys(fields).some((name) => name.startsWith("$ACTION"))).toBe(
+    true,
+  );
+  return fields;
 }
 
-function postCreatePage(page: Page, actionField: string, slug: string) {
+function postCreatePage(
+  page: Page,
+  actionFields: Record<string, string>,
+  slug: string,
+) {
   return page.request.post("/admin/pages/new", {
-    multipart: { [actionField]: "", title: `E2E ${slug}`, slug },
+    multipart: { ...actionFields, title: `E2E ${slug}`, slug },
     maxRedirects: 0,
   });
 }
@@ -81,10 +91,10 @@ test.describe("rbac", () => {
     const editorContext = await browser.newContext();
     const editor = await editorContext.newPage();
     await loginAndWait(editor, "editor");
-    const actionField = await createPageActionField(editor);
+    const actionFields = await createPageActionFields(editor);
 
     const controlSlug = `e2e-control-${Date.now()}`;
-    const control = await postCreatePage(editor, actionField, controlSlug);
+    const control = await postCreatePage(editor, actionFields, controlSlug);
     // Redirect to the new page's detail view = the action really ran.
     expect(control.status()).toBe(303);
     expect(await pageSlugsVisibleTo(editor)).toContain(`/${controlSlug}`);
@@ -95,7 +105,7 @@ test.describe("rbac", () => {
     await loginAndWait(viewer, "viewer");
 
     const blockedSlug = `e2e-blocked-${Date.now()}`;
-    const blocked = await postCreatePage(viewer, actionField, blockedSlug);
+    const blocked = await postCreatePage(viewer, actionFields, blockedSlug);
     expect(blocked.status()).toBe(500);
     expect(await pageSlugsVisibleTo(editor)).not.toContain(`/${blockedSlug}`);
 

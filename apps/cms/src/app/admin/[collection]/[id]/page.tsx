@@ -4,6 +4,7 @@ import { auth } from "@/lib/auth";
 import { collectionRegistry } from "@/collections/registry";
 import { hasCollectionAccess } from "@/collections/access";
 import { FieldInput } from "@/collections/FieldInput";
+import { ActionForm } from "@/components/ui/action-form";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { FieldGroup } from "@/components/ui/fieldset";
@@ -87,7 +88,7 @@ export default async function EditDocument({
         </div>
       )}
 
-      <form action={updateThisDocument} className="mt-6">
+      <ActionForm action={updateThisDocument} className="mt-6">
         <FieldGroup>
           {config.fields.map((field) => (
             <FieldInput
@@ -103,7 +104,7 @@ export default async function EditDocument({
             Save
           </Button>
         )}
-      </form>
+      </ActionForm>
     </div>
   );
 }

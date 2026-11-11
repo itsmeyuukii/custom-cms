@@ -3,6 +3,7 @@ import { auth } from "@/lib/auth";
 import { collectionRegistry } from "@/collections/registry";
 import { hasCollectionAccess } from "@/collections/access";
 import { FieldInput } from "@/collections/FieldInput";
+import { ActionForm } from "@/components/ui/action-form";
 import { Button } from "@/components/ui/button";
 import { FieldGroup } from "@/components/ui/fieldset";
 import { createDocumentAction } from "../actions";
@@ -32,7 +33,7 @@ export default async function NewDocument({
       <h1 className="text-2xl font-semibold text-zinc-900">
         New {config.label}
       </h1>
-      <form action={createThisDocument} className="mt-6">
+      <ActionForm action={createThisDocument} className="mt-6">
         <FieldGroup>
           {config.fields.map((field) => (
             <FieldInput key={field.name} field={field} />
@@ -41,7 +42,7 @@ export default async function NewDocument({
         <Button type="submit" className="mt-6">
           Create
         </Button>
-      </form>
+      </ActionForm>
     </div>
   );
 }

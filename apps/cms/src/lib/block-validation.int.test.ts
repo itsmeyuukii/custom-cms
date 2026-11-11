@@ -1,6 +1,7 @@
 import { randomUUID } from "node:crypto";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { assertValidBlock } from "./block-validation";
+import { UserError } from "./form-errors";
 import { prisma } from "./prisma";
 
 // A throwaway component with the seeded Hero schema, uniquely keyed.
@@ -51,5 +52,14 @@ describe("assertValidBlock", () => {
     await expect(
       assertValidBlock({ key: "missing-key" }, { heading: "Hi" }),
     ).rejects.toThrow('Unknown component "missing-key"');
+  });
+
+  it("throws UserErrors, so admin forms can show the message", async () => {
+    await expect(assertValidBlock({ id }, {})).rejects.toBeInstanceOf(
+      UserError,
+    );
+    await expect(
+      assertValidBlock({ id: "missing" }, {}),
+    ).rejects.toBeInstanceOf(UserError);
   });
 });

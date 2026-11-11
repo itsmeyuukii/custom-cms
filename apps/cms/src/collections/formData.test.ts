@@ -1,4 +1,5 @@
 import { describe, expect, it } from "vitest";
+import { UserError } from "@/lib/form-errors";
 import { parseDocumentFormData } from "./formData";
 import type { CollectionConfig, Field } from "./types";
 
@@ -127,5 +128,11 @@ describe("parseDocumentFormData", () => {
     expect(() => parse(fields, [["links", "{not json"]])).toThrow(
       '"Footer links" must be valid JSON',
     );
+  });
+
+  it("throws a UserError for invalid JSON, so the form can show it", () => {
+    const fields: Field[] = [{ name: "links", type: "array", fields: [] }];
+
+    expect(() => parse(fields, [["links", "{not json"]])).toThrow(UserError);
   });
 });

@@ -5,6 +5,7 @@ import { redirect } from "next/navigation";
 import type { ContentStatus } from "@prisma/client";
 import { collectionRegistry } from "@/collections/registry";
 import { parseDocumentFormData } from "@/collections/formData";
+import { type FormState, toFormState } from "@/lib/form-errors";
 import {
   createDocument,
   updateDocument,
@@ -20,27 +21,35 @@ function requireConfig(collectionSlug: string) {
 
 export async function createDocumentAction(
   collectionSlug: string,
+  _prevState: FormState,
   formData: FormData,
-) {
+): Promise<FormState> {
   const config = requireConfig(collectionSlug);
-  const input = parseDocumentFormData(config, formData);
-  const document = await createDocument(collectionSlug, input);
 
-  revalidatePath(`/admin/${collectionSlug}`);
-  redirect(`/admin/${collectionSlug}/${document.id}`);
+  return toFormState(async () => {
+    const input = parseDocumentFormData(config, formData);
+    const document = await createDocument(collectionSlug, input);
+
+    revalidatePath(`/admin/${collectionSlug}`);
+    redirect(`/admin/${collectionSlug}/${document.id}`);
+  });
 }
 
 export async function updateDocumentAction(
   collectionSlug: string,
   id: string,
+  _prevState: FormState,
   formData: FormData,
-) {
+): Promise<FormState> {
   const config = requireConfig(collectionSlug);
-  const input = parseDocumentFormData(config, formData);
-  await updateDocument(id, input);
 
-  revalidatePath(`/admin/${collectionSlug}`);
-  revalidatePath(`/admin/${collectionSlug}/${id}`);
+  return toFormState(async () => {
+    const input = parseDocumentFormData(config, formData);
+    await updateDocument(id, input);
+
+    revalidatePath(`/admin/${collectionSlug}`);
+    revalidatePath(`/admin/${collectionSlug}/${id}`);
+  });
 }
 
 export async function setDocumentStatusAction(

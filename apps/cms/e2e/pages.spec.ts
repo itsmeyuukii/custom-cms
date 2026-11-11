@@ -68,14 +68,40 @@ test.describe("pages", () => {
     const pageUrl = page.url();
 
     // Hero requires `heading`, and `onClick` isn't one of its props.
+    const invalid = JSON.stringify({ subheading: "no heading", onClick: "x" });
     await page.getByLabel("Component").selectOption({ label: "Hero" });
-    await page
-      .getByLabel("Data (JSON)")
-      .fill(JSON.stringify({ subheading: "no heading", onClick: "x" }));
+    await page.getByLabel("Data (JSON)").fill(invalid);
     await page.getByRole("button", { name: "Add Block" }).click();
+
+    // The editor sees why, and keeps what they typed to fix it.
+    await expect(page.getByRole("main").getByRole("alert")).toContainText(
+      `Invalid data for "hero": (root): must have required property 'heading'; onClick: is not an allowed property`,
+    );
+    await expect(page.getByLabel("Data (JSON)")).toHaveValue(invalid);
 
     await page.goto(pageUrl);
     await expect(page.getByText("No blocks yet.")).toBeVisible();
+  });
+
+  test("creating a page with a slug that's taken says so", async ({ page }) => {
+    const slug = `e2e-dup-${Date.now()}`;
+
+    await loginAndWait(page, "editor");
+    for (const attempt of [1, 2]) {
+      await page.goto("/admin/pages/new");
+      await page.getByLabel("Title").fill(`E2E ${slug} ${attempt}`);
+      await page.getByLabel("Slug").fill(slug);
+      await page.getByRole("button", { name: "Create" }).click();
+      if (attempt === 1) {
+        await expect(page).toHaveURL(/\/admin\/pages\/(?!new$)[^/]+$/);
+      }
+    }
+
+    await expect(page.getByRole("main").getByRole("alert")).toHaveText(
+      "That slug is already in use",
+    );
+    await expect(page).toHaveURL(/\/admin\/pages\/new$/);
+    await expect(page.getByLabel("Title")).toHaveValue(`E2E ${slug} 2`);
   });
 
   test("viewer can open a page but has no write controls", async ({

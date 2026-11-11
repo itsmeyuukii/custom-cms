@@ -8,6 +8,7 @@
 // call underneath.
 
 import type { ContentStatus, Prisma } from "@prisma/client";
+import { UserError } from "@/lib/form-errors";
 import { prisma } from "@/lib/prisma";
 import { assertValidBlocks } from "./blocks";
 import { collectionToZod } from "./validation";
@@ -21,7 +22,9 @@ function parseDocumentData(config: CollectionConfig, input: unknown) {
     const issues = result.error.issues
       .map((issue) => `${issue.path.join(".") || "(root)"}: ${issue.message}`)
       .join("; ");
-    throw new Error(`Invalid data for collection "${config.slug}": ${issues}`);
+    throw new UserError(
+      `Invalid data for collection "${config.slug}": ${issues}`,
+    );
   }
   return result.data as Prisma.InputJsonObject;
 }
@@ -56,7 +59,7 @@ async function assertUniqueFields(
     });
 
     if (existing) {
-      throw new Error(
+      throw new UserError(
         `"${field.label ?? field.name}" must be unique — "${String(value)}" is already in use`,
       );
     }

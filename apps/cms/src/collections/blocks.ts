@@ -7,6 +7,7 @@
 // becomes a callable server action endpoint.
 
 import { assertValidBlock } from "@/lib/block-validation";
+import { UserError } from "@/lib/form-errors";
 import type { CollectionConfig, Field } from "./types";
 
 type BlockItem = { component: string; data: unknown };
@@ -26,8 +27,10 @@ async function checkFields(
         try {
           await assertValidBlock({ key: item.component }, item.data);
         } catch (error) {
-          const message = error instanceof Error ? error.message : error;
-          throw new Error(`${fieldPath}.${index}: ${message}`);
+          // Only the editor's own mistakes get the path added and stay
+          // showable; anything else (a database failure) passes through.
+          if (!(error instanceof UserError)) throw error;
+          throw new UserError(`${fieldPath}.${index}: ${error.message}`);
         }
       }
     } else if (field.type === "array") {
