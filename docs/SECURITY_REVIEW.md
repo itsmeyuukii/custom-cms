@@ -16,7 +16,7 @@ attack surface not covered here.
 | 4   | No rate limiting on login                                                              | Medium       | **Fixed** (2026-11-03)                                                |
 | 5   | Seeded admin password is weak and documented in plaintext                              | Medium       | Open — expected for local dev, must rotate before any shared/prod use |
 | 6   | 4 high-severity advisories in Prisma CLI's transitive deps (`mysql2`, `deepmerge-ts`)  | Low          | Open, dev-tooling only                                                |
-| 7   | No security headers configured (CSP, `X-Frame-Options`, etc.)                          | Low          | Open                                                                  |
+| 7   | No security headers configured (CSP, `X-Frame-Options`, etc.)                          | Low          | **Fixed** (2026-11-11)                                                |
 | 8   | `CardGrid` renders admin-supplied `imageUrl` with no allow-list                        | Low          | Open                                                                  |
 
 ---
@@ -177,6 +177,29 @@ Nothing in `next.config.ts` sets `Content-Security-Policy`,
 pre-launch, but cheap to add via Next's `headers()` config once the app
 has a real deployment target.
 
+**Fixed (2026-11-11):** `src/lib/security-headers.ts`, applied to
+every route by `next.config.ts`, sends a Content-Security-Policy
+(`default-src 'self'`, `object-src 'none'`, `base-uri` and
+`form-action 'self'`, `frame-ancestors 'none'`), plus
+`X-Frame-Options: DENY`, `X-Content-Type-Options: nosniff`,
+`Referrer-Policy: strict-origin-when-cross-origin` and a
+`Permissions-Policy` turning off camera, microphone and geolocation.
+Vercel already sends HSTS. Two deliberate loosenings:
+
+- `script-src` and `style-src` allow `'unsafe-inline'`. Next's
+  bootstrap scripts are inline; the strict alternative, per-request
+  nonces, forces every page into dynamic rendering (Next's bundled CSP
+  guide). A build with `script-src 'self'` alone broke login
+  outright, confirmed by the e2e CSP test. Revisit with nonces or
+  Next's experimental SRI if the public site ever needs a strict CSP.
+- `img-src` allows any `https:` origin, because Media files live on
+  Vercel Blob and CardGrid takes arbitrary image URLs. Narrowing that
+  is finding #8's allow-list.
+
+`e2e/security-headers.spec.ts` checks the headers on `/`, `/login` and
+`/api/v1/pages`, and that logging in and using admin forms raises no
+CSP violations.
+
 ## 8. Unvalidated `imageUrl` in `CardGrid` — Low
 
 **File:** [src/components/blocks/CardGrid.tsx:18](../src/components/blocks/CardGrid.tsx#L18)
@@ -210,8 +233,9 @@ per finding #2).
 _Findings #1 and #2 (the ones that mattered most — they meant the `Role`
 model this app is built around wasn't actually providing any protection)
 are fixed as of 2026-09-15, #4 (login rate limiting) as of 2026-11-03,
-and #3 (block data validation) as of 2026-11-09. Next worth doing: #5
-(rotate the seeded admin password in production) and #7 (security
-headers) — see
+#3 (block data validation) as of 2026-11-09, and #7 (security headers)
+as of 2026-11-11. Next worth doing: #5
+(rotate the seeded admin password in production) and #8 (an image URL
+allow-list) — see
 [PROJECT_PLAN.md](PROJECT_PLAN.md) §5 for how these fit into the overall
 roadmap._
