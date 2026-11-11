@@ -2,6 +2,7 @@ import { notFound, redirect } from "next/navigation";
 import { prisma } from "@/lib/prisma";
 import { auth } from "@/lib/auth";
 import { hasPermission } from "@/lib/rbac";
+import { ActionForm } from "@/components/ui/action-form";
 import { Button } from "@/components/ui/button";
 import { Checkbox, CheckboxField } from "@/components/ui/checkbox";
 import { Text } from "@/components/ui/text";
@@ -42,7 +43,7 @@ export default async function EditUser({
         <Text>{user.email}</Text>
       </div>
 
-      <form action={updateThisUser} className="mt-6 space-y-6">
+      <ActionForm action={updateThisUser} className="mt-6 space-y-6">
         <div>
           <h2 className="font-semibold text-zinc-900">Roles</h2>
           <div className="mt-2 space-y-1">
@@ -66,7 +67,7 @@ export default async function EditUser({
         </div>
 
         <Button type="submit">Save</Button>
-      </form>
+      </ActionForm>
     </div>
   );
 }

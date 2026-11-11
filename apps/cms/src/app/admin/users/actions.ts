@@ -1,6 +1,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
+import { type FormState, toFormState, UserError } from "@/lib/form-errors";
 import { requirePermission } from "@/lib/rbac";
 import { prisma } from "@/lib/prisma";
 
@@ -43,33 +44,39 @@ async function wouldOrphanPermission(
   return newRolesGrantIt === 0;
 }
 
-export async function updateUserRoles(userId: string, formData: FormData) {
+export async function updateUserRoles(
+  userId: string,
+  _prevState: FormState,
+  formData: FormData,
+): Promise<FormState> {
   await requirePermission("users:manage");
 
-  const roleIds = formData.getAll("roleIds").map(String);
+  return toFormState(async () => {
+    const roleIds = formData.getAll("roleIds").map(String);
 
-  for (const key of ["users:manage", "roles:manage"] as const) {
-    if (await wouldOrphanPermission(userId, roleIds, key)) {
-      throw new Error(
-        `This would leave no one able to manage ${key === "users:manage" ? "users" : "roles"}. ` +
-          `Keep a role granting ${key} assigned here, or grant it to another user first.`,
-      );
+    for (const key of ["users:manage", "roles:manage"] as const) {
+      if (await wouldOrphanPermission(userId, roleIds, key)) {
+        throw new UserError(
+          `This would leave no one able to manage ${key === "users:manage" ? "users" : "roles"}. ` +
+            `Keep a role granting ${key} assigned here, or grant it to another user first.`,
+        );
+      }
     }
-  }
 
-  await prisma.$transaction([
-    prisma.userRole.deleteMany({
-      where: { userId, roleId: { notIn: roleIds } },
-    }),
-    ...roleIds.map((roleId) =>
-      prisma.userRole.upsert({
-        where: { userId_roleId: { userId, roleId } },
-        update: {},
-        create: { userId, roleId },
+    await prisma.$transaction([
+      prisma.userRole.deleteMany({
+        where: { userId, roleId: { notIn: roleIds } },
       }),
-    ),
-  ]);
+      ...roleIds.map((roleId) =>
+        prisma.userRole.upsert({
+          where: { userId_roleId: { userId, roleId } },
+          update: {},
+          create: { userId, roleId },
+        }),
+      ),
+    ]);
 
-  revalidatePath("/admin/users");
-  revalidatePath(`/admin/users/${userId}`);
+    revalidatePath("/admin/users");
+    revalidatePath(`/admin/users/${userId}`);
+  });
 }

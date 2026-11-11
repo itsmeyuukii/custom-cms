@@ -38,11 +38,11 @@ test.describe("media permissions", () => {
       mimeType: "text/plain",
       buffer: Buffer.from("not an image"),
     });
-    const [response] = await Promise.all([
-      page.waitForResponse((r) => r.request().method() === "POST"),
-      page.getByRole("button", { name: "Upload" }).click(),
-    ]);
-    expect(response.status()).toBe(500);
+    await page.getByRole("button", { name: "Upload" }).click();
+
+    await expect(page.getByRole("main").getByRole("alert")).toContainText(
+      'Unsupported file type "text/plain"',
+    );
 
     await page.goto("/admin/media");
     await expect(page.getByText(filename)).toHaveCount(0);

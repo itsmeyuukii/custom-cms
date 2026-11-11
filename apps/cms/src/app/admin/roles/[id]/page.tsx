@@ -2,6 +2,7 @@ import { notFound, redirect } from "next/navigation";
 import { prisma } from "@/lib/prisma";
 import { auth } from "@/lib/auth";
 import { hasPermission } from "@/lib/rbac";
+import { ActionForm } from "@/components/ui/action-form";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -65,7 +66,7 @@ export default async function EditRole({
         </Text>
       </div>
 
-      <form action={updateThisRole} className="mt-6 space-y-6">
+      <ActionForm action={updateThisRole} className="mt-6 space-y-6">
         <FieldGroup>
           <Field>
             <Label htmlFor="name">Name</Label>
@@ -107,7 +108,7 @@ export default async function EditRole({
         </div>
 
         <Button type="submit">Save</Button>
-      </form>
+      </ActionForm>
     </div>
   );
 }
