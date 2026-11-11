@@ -66,4 +66,37 @@ test.describe("admin form errors", () => {
     await page.reload();
     await expect(adminRole).toBeChecked();
   });
+
+  test("an unexpected error shows the admin error screen with a reference", async ({
+    browser,
+  }) => {
+    const context = await browser.newContext();
+    const first = await context.newPage();
+    await loginAndWait(first, "admin");
+
+    const slug = `e2e-gone-${Date.now()}`;
+    await first.goto("/admin/posts/new");
+    await first.getByLabel("Title").fill(`E2E ${slug}`);
+    await first.getByLabel("Slug").fill(slug);
+    await first.getByLabel("Body").fill("Deleted twice.");
+    await first.getByRole("button", { name: "Create" }).click();
+    await expect(first).toHaveURL(/\/admin\/posts\/(?!new$)[^/]+$/);
+
+    // A second tab on the same post, then delete it from the first one.
+    const second = await context.newPage();
+    await second.goto(first.url());
+    await first.getByRole("button", { name: "Delete" }).click();
+    await expect(first).toHaveURL(/\/admin\/posts$/);
+
+    // Deleting it again is not an input problem the form could explain.
+    await second.getByRole("button", { name: "Delete" }).click();
+    await expect(
+      second.getByRole("heading", { name: "Something went wrong" }),
+    ).toBeVisible();
+    await expect(second.getByText(/^Reference:/)).toBeVisible();
+    // Still inside the admin layout, so the sidebar stays usable.
+    await expect(second.getByRole("link", { name: "Dashboard" })).toBeVisible();
+
+    await context.close();
+  });
 });
