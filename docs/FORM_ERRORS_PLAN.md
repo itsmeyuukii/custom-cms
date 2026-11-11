@@ -4,8 +4,20 @@ Goal: when an admin form is rejected (invalid block data, a duplicate
 slug, a role change that would lock everyone out), the editor sees the
 reason next to the form, and keeps what they typed.
 
-**Status: phases 1 (core) and 2 (pages, collections) done. Phases 3-4
-not started.**
+**Status: phases 1 (core), 2 (pages, collections) and 3 (roles, users,
+media) done. Phase 4 (fallback + docs) not started.**
+
+Phase 3: `createRole`, `updateRole`, `updateUserRoles` and `uploadMedia`
+return `toFormState(...)` and their forms are `ActionForm`s (media
+resets after a successful upload). Their validation and lockout errors
+are `UserError`s. New Playwright tests, failing first against the old
+build: a duplicate role slug, removing `roles:manage` from the only
+role that has it, removing the last admin's Admin role, and the
+updated unsupported-media-type test, each showing its message (the
+lockout ones also confirm nothing was saved). Every remaining plain
+`<form action>` is a button-only form (delete, set status). A
+successful upload through the new form isn't covered locally: that
+test needs a real Vercel Blob token, which local runs don't export.
 
 Phase 2: `createPage`, `addBlock`, `createDocumentAction` and
 `updateDocumentAction` return `toFormState(...)`, and their forms are

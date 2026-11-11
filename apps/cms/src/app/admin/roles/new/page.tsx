@@ -1,6 +1,7 @@
 import { redirect } from "next/navigation";
 import { auth } from "@/lib/auth";
 import { hasPermission } from "@/lib/rbac";
+import { ActionForm } from "@/components/ui/action-form";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -18,7 +19,7 @@ export default async function NewRole() {
       <p className="mt-2 text-sm text-zinc-500">
         Starts with no permissions — add them on the next screen.
       </p>
-      <form action={createRole} className="mt-6">
+      <ActionForm action={createRole} className="mt-6">
         <FieldGroup>
           <Field>
             <Label htmlFor="name">Name</Label>
@@ -42,7 +43,7 @@ export default async function NewRole() {
         <Button type="submit" className="mt-6">
           Create
         </Button>
-      </form>
+      </ActionForm>
     </div>
   );
 }

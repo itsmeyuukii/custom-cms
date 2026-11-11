@@ -2,24 +2,30 @@
 
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
+import { type FormState, toFormState, UserError } from "@/lib/form-errors";
 import { requirePermission } from "@/lib/rbac";
 import { prisma } from "@/lib/prisma";
 
-export async function createRole(formData: FormData) {
+export async function createRole(
+  _prevState: FormState,
+  formData: FormData,
+): Promise<FormState> {
   await requirePermission("roles:manage");
 
-  const name = String(formData.get("name") ?? "").trim();
-  const slug = String(formData.get("slug") ?? "").trim();
-  const description = String(formData.get("description") ?? "").trim();
+  return toFormState(async () => {
+    const name = String(formData.get("name") ?? "").trim();
+    const slug = String(formData.get("slug") ?? "").trim();
+    const description = String(formData.get("description") ?? "").trim();
 
-  if (!name || !slug) throw new Error("Name and slug are required");
+    if (!name || !slug) throw new UserError("Name and slug are required");
 
-  const role = await prisma.role.create({
-    data: { name, slug, description: description || null },
+    const role = await prisma.role.create({
+      data: { name, slug, description: description || null },
+    });
+
+    revalidatePath("/admin/roles");
+    redirect(`/admin/roles/${role.id}`);
   });
-
-  revalidatePath("/admin/roles");
-  redirect(`/admin/roles/${role.id}`);
 }
 
 /**
@@ -54,39 +60,45 @@ async function wouldRemoveLastRolesManageHolder(
   return thisRoleHasUsers > 0;
 }
 
-export async function updateRole(roleId: string, formData: FormData) {
+export async function updateRole(
+  roleId: string,
+  _prevState: FormState,
+  formData: FormData,
+): Promise<FormState> {
   await requirePermission("roles:manage");
 
-  const name = String(formData.get("name") ?? "").trim();
-  const description = String(formData.get("description") ?? "").trim();
-  const permissionIds = formData.getAll("permissionIds").map(String);
+  return toFormState(async () => {
+    const name = String(formData.get("name") ?? "").trim();
+    const description = String(formData.get("description") ?? "").trim();
+    const permissionIds = formData.getAll("permissionIds").map(String);
 
-  if (!name) throw new Error("Name is required");
+    if (!name) throw new UserError("Name is required");
 
-  if (await wouldRemoveLastRolesManageHolder(roleId, permissionIds)) {
-    throw new Error(
-      "This would leave no one able to manage roles. Keep roles:manage " +
-        "checked here, or grant it to another role with a user first.",
-    );
-  }
+    if (await wouldRemoveLastRolesManageHolder(roleId, permissionIds)) {
+      throw new UserError(
+        "This would leave no one able to manage roles. Keep roles:manage " +
+          "checked here, or grant it to another role with a user first.",
+      );
+    }
 
-  await prisma.$transaction([
-    prisma.role.update({
-      where: { id: roleId },
-      data: { name, description: description || null },
-    }),
-    prisma.rolePermission.deleteMany({
-      where: { roleId, permissionId: { notIn: permissionIds } },
-    }),
-    ...permissionIds.map((permissionId) =>
-      prisma.rolePermission.upsert({
-        where: { roleId_permissionId: { roleId, permissionId } },
-        update: {},
-        create: { roleId, permissionId },
+    await prisma.$transaction([
+      prisma.role.update({
+        where: { id: roleId },
+        data: { name, description: description || null },
       }),
-    ),
-  ]);
+      prisma.rolePermission.deleteMany({
+        where: { roleId, permissionId: { notIn: permissionIds } },
+      }),
+      ...permissionIds.map((permissionId) =>
+        prisma.rolePermission.upsert({
+          where: { roleId_permissionId: { roleId, permissionId } },
+          update: {},
+          create: { roleId, permissionId },
+        }),
+      ),
+    ]);
 
-  revalidatePath("/admin/roles");
-  revalidatePath(`/admin/roles/${roleId}`);
+    revalidatePath("/admin/roles");
+    revalidatePath(`/admin/roles/${roleId}`);
+  });
 }

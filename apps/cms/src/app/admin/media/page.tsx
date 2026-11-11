@@ -1,6 +1,7 @@
 import { auth } from "@/lib/auth";
 import { hasPermission } from "@/lib/rbac";
 import { prisma } from "@/lib/prisma";
+import { ActionForm } from "@/components/ui/action-form";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Field, FieldGroup, Label } from "@/components/ui/fieldset";
@@ -23,7 +24,8 @@ export default async function AdminMediaLibrary() {
       <h1 className="text-2xl font-semibold text-zinc-900">Media</h1>
 
       {canUpload && (
-        <form
+        <ActionForm
+          resetOnSuccess
           action={uploadMedia}
           className="mt-6 max-w-md space-y-3 rounded-lg border border-zinc-200 p-4"
         >
@@ -45,7 +47,7 @@ export default async function AdminMediaLibrary() {
             </Field>
           </FieldGroup>
           <Button type="submit">Upload</Button>
-        </form>
+        </ActionForm>
       )}
 
       <ul className="mt-6 grid grid-cols-2 gap-4 sm:grid-cols-4">
