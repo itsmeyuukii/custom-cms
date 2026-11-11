@@ -4,7 +4,30 @@ Goal: when an admin form is rejected (invalid block data, a duplicate
 slug, a role change that would lock everyone out), the editor sees the
 reason next to the form, and keeps what they typed.
 
-**Status: phase 1 (core) done. Phases 2-4 not started.**
+**Status: phases 1 (core) and 2 (pages, collections) done. Phases 3-4
+not started.**
+
+Phase 2: `createPage`, `addBlock`, `createDocumentAction` and
+`updateDocumentAction` return `toFormState(...)`, and their forms are
+`ActionForm`s. Block validation, collection validation, invalid JSON
+and the unique-field check now throw `UserError` (each layer's tests
+asserted that first and failed). Playwright, written first and failing
+against the old build: an invalid block shows the Ajv message and keeps
+the JSON in the textarea, a duplicate page slug shows "That slug is
+already in use" and keeps the title, and a duplicate post slug shows the
+unique-field message. Two changes from the design:
+
+- `ActionForm` sets **both** `action={formAction}` and `onSubmit`. With
+  only `onSubmit`, React rendered no progressive-enhancement fields, and
+  the RBAC regression test (SECURITY_REVIEW #1: replaying the New Page
+  action with a viewer's cookies) had nothing to replay. With both,
+  JavaScript submits still go through `onSubmit` (`preventDefault()`
+  stops React's own action and reset, the component tests confirm),
+  and a plain POST works again, so progressive enhancement is kept
+  after all. The test now posts every hidden field in the form rather
+  than one hard-coded `$ACTION_ID_` name.
+- Next renders its own `role="alert"` (the route announcer), so tests
+  find the form error with `getByRole("main").getByRole("alert")`.
 
 Phase 1: `UserError` and `toFormState` (`src/lib/form-errors.ts`, 7
 unit tests) and `ActionForm` (`src/components/ui/action-form.tsx`, 5
@@ -54,13 +77,13 @@ and to throw only for genuinely unexpected failures.
   translated exception: a Prisma unique-constraint violation (`P2002`)
   becomes "That <field> is already in use" (e.g. slug), since a duplicate is the
   most common expected error and today surfaces as a raw Prisma error.
-- **Inputs survive a rejected submit.** React 19 resets a `<form
-action>` after every submission, which would wipe a long JSON block on
-  a typo. The shared form submits through `onSubmit` + `startTransition`
+- **Inputs survive a rejected submit.** React 19 resets a form after
+  every action it runs, which would wipe a long JSON block on a typo.
+  The shared form submits through `onSubmit` + `startTransition`
   instead, which doesn't reset, and resets explicitly only on success
-  for "add" forms. This gives up progressive enhancement (a submit
-  without JavaScript), which the admin already depends on (login is a
-  client component).
+  for "add" forms. It keeps `action` set as well, so a submit without
+  JavaScript still works (see phase 2 for why that turned out to
+  matter).
 - **Button-only forms stay as they are** (set status, delete). They
   take no typed input; a failure there is a bug or a permission
   problem, which belongs on an error screen. A new `admin/error.tsx`

@@ -4,6 +4,7 @@
 // FieldInput.tsx renders for that type — actual shape/required validation
 // still happens in src/collections/validation.ts, not here.
 
+import { UserError } from "@/lib/form-errors";
 import type { CollectionConfig, Field } from "./types";
 
 function parseFieldValue(field: Field, formData: FormData): unknown {
@@ -63,7 +64,9 @@ function parseFieldValue(field: Field, formData: FormData): unknown {
       try {
         return JSON.parse(raw);
       } catch {
-        throw new Error(`"${field.label ?? field.name}" must be valid JSON`);
+        throw new UserError(
+          `"${field.label ?? field.name}" must be valid JSON`,
+        );
       }
     }
     default: {

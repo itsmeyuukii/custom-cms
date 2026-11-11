@@ -1,5 +1,6 @@
 import { randomUUID } from "node:crypto";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
+import { UserError } from "@/lib/form-errors";
 import { prisma } from "@/lib/prisma";
 import { assertValidBlocks } from "./blocks";
 import type { CollectionConfig } from "./types";
@@ -88,5 +89,11 @@ describe("assertValidBlocks", () => {
     ).rejects.toThrow(
       `sections.1.content.0: Invalid data for "${key}": (root): must have required property 'heading'`,
     );
+  });
+
+  it("keeps the error a UserError after adding the block's path", async () => {
+    await expect(
+      assertValidBlocks(config, { content: [{ component: key, data: {} }] }),
+    ).rejects.toBeInstanceOf(UserError);
   });
 });

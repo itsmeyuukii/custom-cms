@@ -36,5 +36,17 @@ test.describe("posts (collection)", () => {
     await expect(page.getByRole("row").filter({ hasText: slug })).toContainText(
       "DRAFT",
     );
+
+    // A second post with the same slug is rejected with the reason, and
+    // the form keeps what was typed.
+    await page.goto("/admin/posts/new");
+    await page.getByLabel("Title").fill("Duplicate");
+    await page.getByLabel("Slug").fill(slug);
+    await page.getByLabel("Body").fill("Same slug as before.");
+    await page.getByRole("button", { name: "Create" }).click();
+    await expect(page.getByRole("main").getByRole("alert")).toContainText(
+      `"slug" must be unique — "${slug}" is already in use`,
+    );
+    await expect(page.getByLabel("Title")).toHaveValue("Duplicate");
   });
 });

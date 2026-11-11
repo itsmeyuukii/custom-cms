@@ -4,6 +4,7 @@
 // it's ever written. Shared by page blocks and collection `blocks` fields.
 
 import Ajv, { type ErrorObject, type ValidateFunction } from "ajv";
+import { UserError } from "@/lib/form-errors";
 import { prisma } from "@/lib/prisma";
 
 export const MAX_BLOCK_DATA_BYTES = 64 * 1024;
@@ -116,11 +117,11 @@ export async function assertValidBlock(
   });
   if (!found) {
     const ref = "id" in component ? component.id : component.key;
-    throw new Error(`Unknown component "${ref}"`);
+    throw new UserError(`Unknown component "${ref}"`);
   }
 
   const result = validateBlockData(found.schema, data);
   if (!result.ok) {
-    throw new Error(`Invalid data for "${found.key}": ${result.message}`);
+    throw new UserError(`Invalid data for "${found.key}": ${result.message}`);
   }
 }

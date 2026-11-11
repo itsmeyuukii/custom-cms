@@ -38,9 +38,11 @@ export function ActionForm({
     }
   }, [state, resetOnSuccess]);
 
-  // Submitting through onSubmit rather than <form action>: React resets a
-  // form after every action submission, which would wipe the editor's
-  // input exactly when it was rejected.
+  // JavaScript submits go through onSubmit: React resets a form after
+  // every action it runs itself, which would wipe the editor's input
+  // exactly when it was rejected, and preventDefault() stops React from
+  // running it. `action` stays set for what it adds without JavaScript:
+  // the progressive-enhancement fields a plain POST can submit.
   function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     const formData = new FormData(event.currentTarget);
@@ -48,7 +50,12 @@ export function ActionForm({
   }
 
   return (
-    <form ref={formRef} onSubmit={handleSubmit} className={className}>
+    <form
+      ref={formRef}
+      action={formAction}
+      onSubmit={handleSubmit}
+      className={className}
+    >
       {children}
       {state.error && (
         <ErrorMessage role="alert" className="mt-4">

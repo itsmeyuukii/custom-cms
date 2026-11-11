@@ -2,6 +2,7 @@ import { notFound } from "next/navigation";
 import { prisma } from "@/lib/prisma";
 import { auth } from "@/lib/auth";
 import { hasPermission } from "@/lib/rbac";
+import { ActionForm } from "@/components/ui/action-form";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Select } from "@/components/ui/select";
@@ -96,7 +97,7 @@ export default async function EditPage({
       {canWrite && (
         <>
           <h2 className="mt-8 font-semibold text-zinc-900">Add Block</h2>
-          <form action={addBlockToPage} className="mt-2">
+          <ActionForm action={addBlockToPage} resetOnSuccess className="mt-2">
             <FieldGroup>
               <Field>
                 <Label htmlFor="componentId">Component</Label>
@@ -122,7 +123,7 @@ export default async function EditPage({
             <Button type="submit" className="mt-4">
               Add Block
             </Button>
-          </form>
+          </ActionForm>
         </>
       )}
 
